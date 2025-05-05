@@ -1,0 +1,130 @@
+import Spinner from "../../shared/spinner";
+
+interface SummaryStepProps {
+  formData: any;
+  onSubmit: () => void;
+  onPrevious: () => void;
+  onNext: () => void;
+}
+
+export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: SummaryStepProps) {
+  const calculateTotal = () => {
+    let total = formData.selectedPackage.price;
+
+    // Add-ons
+    if (formData.addOns) {
+      formData.addOns.forEach((addon: any) => {
+        total += addon.price
+      });
+    }
+
+    return total;
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Final Form Data:', formData);
+    onSubmit();
+    onNext()
+  };
+  const dateOptions = {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  };
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="bg-white overflow-hidden">
+        <div className="mb-4 px-2">
+          <h2 className="text-xl font-medium text-gray-900">Summary</h2>
+        </div>
+
+
+
+
+
+
+
+        <div className="rounded-lg border border-gray-200 px-6 py-4 my-2 mb-6">
+
+          <div className="flex flex-col">
+            <div className="flex flex-row items-center gap-4">
+              <div className="rounded-lg border border-gray-200 px-4 py-4">
+                <img src="/icons/diamond.svg" alt="" />
+              </div>
+              <div>
+                <p className="text-lg font-bold">{formData.selectedPackage.name}</p>
+                {formData.addOns && formData.addOns.length > 0 && <p className="text-sm">
+                  Addons: {formData.addOns[0].name}
+                </p>}
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 mt-4">
+              <div className="col-span-1">
+                <p className="text-sm text-gray-500">Property Adress</p>
+                <p className="font-semibold">{formData.buildingName}, Unit {formData.unitNumber}, Floor {formData.floor}</p>
+              </div>
+
+              <div className="col-span-1">
+                <p className="text-sm text-gray-500">Scheduled Date & Time</p>
+                <p className="font-semibold">{new Date(Date.parse(formData.date)).toLocaleDateString("en-GB", dateOptions as any)}, {formData.timeSlot}</p>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+
+
+
+
+
+
+
+
+
+
+        <div className="rounded-lg border border-gray-200 px-6 py-4 bg-gray-100">
+          <dl className="space-y-4">
+            <div className="flex justify-between">
+              <dt className="text-sm font-medium text-gray-600">{formData.selectedPackage.name}</dt>
+              <dd className="text-sm text-gray-900 font-bold">AED {formData.selectedPackage.price}</dd>
+            </div>
+            {formData.addOns && formData.addOns.length > 0 && (
+              formData.addOns.map((addon: any) =>
+                <div className="flex justify-between">
+                  <dt className="text-sm font-medium text-gray-600">Addon: {addon.name}</dt>
+                  <dd className="text-sm text-gray-900 font-bold">AED {addon.price}</dd>
+                </div>
+              )
+            )}
+          </dl>
+          <hr className="bg-gray-300 h-[2px] width-[90%] mt-4" />
+          <div className="flex justify-between mt-4">
+            <dt className="text-base font-medium text-gray-900">Total</dt>
+            <dd className="text-base text-gray-900 font-bold">{calculateTotal()} AED</dd>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex justify-between">
+        <button
+          type="button"
+          onClick={onPrevious}
+          className="hover:text-gray-900 border border-emerald-600 rounded-lg px-2 text-emerald-600"
+        >
+          ← Previous
+        </button>
+        <button
+          type="submit"
+          disabled={formData.isLoading}
+          className="w-[160px] text-center bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700"
+        >
+          {formData.isLoading ? <Spinner /> : <span>Confirm Booking</span>}
+        </button>
+      </div>
+    </form>
+  );
+}

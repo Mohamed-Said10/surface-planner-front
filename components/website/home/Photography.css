@@ -1,0 +1,47 @@
+.wrapper {
+    width: 500px;
+    height: 300px;
+    overflow: hidden;
+}
+
+@media only screen and (max-width: 600px) {
+    .wrapper {
+        height: 260px;
+    }
+}
+
+.image-wrapper {
+    height: 260px;
+    margin-bottom: 1rem;
+}
+
+.images-wrapper {
+    width: 600px;
+    padding: 0px;
+    list-style: none;
+
+    -webkit-animation: pooja 15s ease-in-out infinite;
+    -moz-animation: pooja 15s ease-in-out infinite;
+    -ms-animation: pooja 15s ease-in-out infinite;
+    -o-animation: pooja 15s ease-in-out infinite;
+    animation: pooja 15s ease-in-out infinite;
+}
+
+@keyframes pooja {
+    0% {
+        margin-top: 0;
+    }
+
+    33% {
+        margin-top: -260px;
+    }
+
+    66% {
+        margin-top: -540px;
+    }
+
+    100% {
+        margin-top: 0;
+    }
+
+}

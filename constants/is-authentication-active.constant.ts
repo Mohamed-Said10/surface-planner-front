@@ -1,0 +1,1 @@
+export const IS_AUTHENTICATION_ACTIVE = false
