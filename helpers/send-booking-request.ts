@@ -1,6 +1,6 @@
 
 export function sendBookingRequest(data: any) {
-  const apiEndpoint = '/api/booking';
+  const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking`;
 
   fetch(apiEndpoint, {
     method: 'POST',
