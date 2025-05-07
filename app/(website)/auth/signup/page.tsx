@@ -54,9 +54,9 @@ export default function SignupAltPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        setError(errorData.message || "Something went wrong");
+        setError(errorData.error || "Something went wrong");
       } else {
-        setSuccess("Signup successful! Please log in.");
+        setSuccess("Signup successful! Please check your email to verify you account.");
         setFormData({
           firstname: "",
           lastname: "",
