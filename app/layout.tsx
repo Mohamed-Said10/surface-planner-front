@@ -1,25 +1,28 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
-import Navbar from '@/components/shared/Navbar';
-import Footer from '@/components/shared/Footer';
-import { ThemeProvider } from '@/components/theme-provider';
+// app/layout.tsx
+import type { Metadata } from 'next'
+import SessionProviderWrapper from './SessionProviderWrapper'
+import './globals.css'
 
-const inter = Inter({ subsets: ['latin'] });
+const geistSans ={ subsets: ['latin'] }
+const geistMono = { subsets: ['latin'] }
 
 export const metadata: Metadata = {
-  title: 'Surface Planner - Professional Property Services',
-  description: 'High-quality property visualization and planning services',
-};
+  title: 'Surface Planner',
+  description: 'Professional property services',
+}
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
+export default function RootLayout({ 
+  children 
+}: { 
+  children: React.ReactNode 
 }) {
   return (
-    <>
-    {children}
-    </>
-  );
+    <html lang="en">
+      <body>
+        <SessionProviderWrapper>
+          {children}
+        </SessionProviderWrapper>
+      </body>
+    </html>
+  )
 }
