@@ -1,13 +1,22 @@
+/* eslint-disable react/jsx-key */
 import Spinner from "../../shared/spinner";
+import { useState } from "react";
+import { useSession, signIn } from "next-auth/react";
+import axios from "axios";
+import { useRouter } from 'next/navigation';
 
 interface SummaryStepProps {
   formData: any;
-  onSubmit: () => void;
+  // onSubmit: () => void;
   onPrevious: () => void;
   onNext: () => void;
 }
 
-export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: SummaryStepProps) {
+export default function SummaryStep({ formData, onPrevious, onNext }: SummaryStepProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { data: session } = useSession();
+  const router = useRouter();
+
   const calculateTotal = () => {
     let total = formData.selectedPackage.price;
 
@@ -21,18 +30,53 @@ export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: 
     return total;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Final Form Data:', formData);
-    onSubmit();
-    onNext()
+    setIsSubmitting(true);
+
+    // Check if user is authenticated
+    if (!session) {
+      // Save form data to sessionStorage for retrieval after login
+      sessionStorage.setItem('bookingFormData', JSON.stringify(formData));
+      sessionStorage.setItem('statusPayment', "pending");
+      // Redirect to login with callback URL to payment page
+      router.push(`/auth/login?callbackUrl=${encodeURIComponent('/payment')}`);
+      return;
+    }
+
+    try {
+      // User is authenticated, create booking with axios
+      const response = await fetch('http://localhost:3000/api/bookings', {
+        method: 'POST',
+        credentials: 'include', // This is crucial for sending cookies
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+      response.json().then((data) => {
+sessionStorage.setItem('bookingId', data.booking.id);
+        sessionStorage.setItem('statusPayment', "not paid");
+      });
+      // Call the original onSubmit function
+
+      // Redirect to payment page - using window.location for App Router compatibility
+      router.push('/payment');
+    } catch (error) {
+      console.error('Error creating booking:', error);
+      alert('Failed to create booking. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
   const dateOptions = {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
   };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="bg-white overflow-hidden">
@@ -40,14 +84,7 @@ export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: 
           <h2 className="text-xl font-medium text-gray-900">Summary</h2>
         </div>
 
-
-
-
-
-
-
         <div className="rounded-lg border border-gray-200 px-6 py-4 my-2 mb-6">
-
           <div className="flex flex-col">
             <div className="flex flex-row items-center gap-4">
               <div className="rounded-lg border border-gray-200 px-4 py-4">
@@ -63,7 +100,7 @@ export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: 
 
             <div className="grid grid-cols-2 mt-4">
               <div className="col-span-1">
-                <p className="text-sm text-gray-500">Property Adress</p>
+                <p className="text-sm text-gray-500">Property Address</p>
                 <p className="font-semibold">{formData.buildingName}, Unit {formData.unitNumber}, Floor {formData.floor}</p>
               </div>
 
@@ -71,20 +108,9 @@ export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: 
                 <p className="text-sm text-gray-500">Scheduled Date & Time</p>
                 <p className="font-semibold">{new Date(Date.parse(formData.date)).toLocaleDateString("en-GB", dateOptions as any)}, {formData.timeSlot}</p>
               </div>
-
             </div>
           </div>
-
         </div>
-
-
-
-
-
-
-
-
-
 
         <div className="rounded-lg border border-gray-200 px-6 py-4 bg-gray-100">
           <dl className="space-y-4">
@@ -119,10 +145,10 @@ export default function SummaryStep({ formData, onSubmit, onPrevious, onNext }: 
         </button>
         <button
           type="submit"
-          disabled={formData.isLoading}
+          disabled={isSubmitting}
           className="w-[160px] text-center bg-emerald-600 text-white px-4 py-2 rounded-md hover:bg-emerald-700"
         >
-          {formData.isLoading ? <Spinner /> : <span>Confirm Booking</span>}
+          {isSubmitting || formData.isLoading ? <Spinner /> : <span>Confirm Booking</span>}
         </button>
       </div>
     </form>
