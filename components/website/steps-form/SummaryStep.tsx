@@ -1,13 +1,11 @@
 /* eslint-disable react/jsx-key */
 import Spinner from "../../shared/spinner";
 import { useState } from "react";
-import { useSession, signIn } from "next-auth/react";
-import axios from "axios";
+import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
 
 interface SummaryStepProps {
   formData: any;
-  // onSubmit: () => void;
   onPrevious: () => void;
   onNext: () => void;
 }
@@ -36,31 +34,46 @@ export default function SummaryStep({ formData, onPrevious, onNext }: SummarySte
 
     // Check if user is authenticated
     if (!session) {
+      // Clear any previous booking data to prevent conflicts
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('bookingId');
+      }
+      
       // Save form data to sessionStorage for retrieval after login
       sessionStorage.setItem('bookingFormData', JSON.stringify(formData));
       sessionStorage.setItem('statusPayment', "pending");
+      
       // Redirect to login with callback URL to payment page
       router.push(`/auth/login?callbackUrl=${encodeURIComponent('/payment')}`);
       return;
     }
 
     try {
-      // User is authenticated, create booking with axios
-      const response = await fetch('http://localhost:3000/api/bookings', {
+      // User is authenticated, create booking
+      const response = await fetch('/api/bookings', {
         method: 'POST',
-        credentials: 'include', // This is crucial for sending cookies
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
-      response.json().then((data) => {
-sessionStorage.setItem('bookingId', data.booking.id);
-        sessionStorage.setItem('statusPayment', "not paid");
-      });
-      // Call the original onSubmit function
+      
+      if (!response.ok) {
+        throw new Error('Failed to create booking');
+      }
+      
+      const data = await response.json();
+      
+      // Store booking ID and clear previous form data
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('bookingId', data.booking.id);
+        // Remove pending status as it's already created
+        sessionStorage.removeItem('bookingFormData');
+        sessionStorage.removeItem('statusPayment');
+      }
 
-      // Redirect to payment page - using window.location for App Router compatibility
+      // Redirect to payment page
       router.push('/payment');
     } catch (error) {
       console.error('Error creating booking:', error);
@@ -120,7 +133,7 @@ sessionStorage.setItem('bookingId', data.booking.id);
             </div>
             {formData.addOns && formData.addOns.length > 0 && (
               formData.addOns.map((addon: any) =>
-                <div className="flex justify-between">
+                <div className="flex justify-between" key={addon.id}>
                   <dt className="text-sm font-medium text-gray-600">Addon: {addon.name}</dt>
                   <dd className="text-sm text-gray-900 font-bold">AED {addon.price}</dd>
                 </div>

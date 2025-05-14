@@ -1,10 +1,32 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+interface AddOn {
+  id: string;
+  name: string;
+  price: number;
+}
+
+interface Package {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+  features: string[];
+  pricePerExtra: number;
+}
+
+interface Booking {
+  id: string;
+  package: Package;
+  addOns?: AddOn[];
+  appointmentDate: string;
+  timeSlot: string;
+}
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Loader2, CreditCard, ArrowLeft, CheckCircle } from "lucide-react";
 
@@ -12,44 +34,64 @@ export default function PaymentPage() {
   const { data: session, status: authStatus } = useSession();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [amount, setAmount] = useState("");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [bookingData, setBookingData] = useState<any>(null);
+  const [bookingData, setBookingData] = useState<Booking | null>(null);
   const [isPaid, setIsPaid] = useState(false);
   const [totalAmount, setTotalAmount] = useState(0);
+  
+  // Refs to track initialization state
+  const bookingCreated = useRef(false);
+  const bookingFetched = useRef(false);
 
-  // Get bookingId from URL or session storage
-const bookingIdFromURL = searchParams.get('bookingId')?.replace(/"/g, '');
+  // Get bookingId from URL or session storage once
+  const bookingIdFromURL = searchParams.get('bookingId')?.replace(/"/g, '');
   const bookingIdFromStorage = typeof window !== 'undefined' ? sessionStorage.getItem('bookingId') : null;
   const bookingId = bookingIdFromURL || bookingIdFromStorage;
-console.log(sessionStorage.getItem('statusPayment'))
+  
+  // Form data for pending booking creation
   const formData = typeof window !== 'undefined' ? sessionStorage.getItem('bookingFormData') : null;
   const pendingBookingCreation = typeof window !== 'undefined' ? sessionStorage.getItem('statusPayment') === 'pending' : false;
 
+  // Store bookingId from URL to session storage if available (only once)
   useEffect(() => {
-    // Store bookingId from URL to session storage if available
     if (bookingIdFromURL && typeof window !== 'undefined') {
       sessionStorage.setItem('bookingId', bookingIdFromURL);
     }
   }, [bookingIdFromURL]);
 
+  // Main effect to handle booking creation or fetching
   useEffect(() => {
-    // If user is authenticated and there's pending booking data, create the booking first
-    if (pendingBookingCreation && formData && authStatus === "authenticated") {
-      handleCreateBooking(JSON.parse(formData));
-    }
-    // If there's a booking ID and user is authenticated, fetch booking details
-    else if (bookingId && authStatus === "authenticated") {
-      fetchBookingDetails();
-    } else if (authStatus !== "loading") {
-      setIsLoading(false);
-    }
-  }, [bookingId, authStatus]);
+    const initializeBooking = async () => {
+      // Only proceed if authentication is complete
+      if (authStatus === "loading") return;
+      
+      // Case 1: Create new booking if pending and authenticated
+      if (pendingBookingCreation && formData && authStatus === "authenticated" && !bookingCreated.current) {
+        bookingCreated.current = true; // Mark as handled to prevent duplicate creation
+        await handleCreateBooking(JSON.parse(formData));
+        return;
+      } 
+      
+      // Case 2: Fetch existing booking if available and authenticated
+      if (bookingId && authStatus === "authenticated" && !bookingFetched.current) {
+        bookingFetched.current = true; // Mark as handled to prevent duplicate fetches
+        await fetchBookingDetails();
+        return;
+      }
+      
+      // Case 3: No action needed, just finish loading
+      if (!isLoading && (authStatus === "authenticated" || authStatus === "unauthenticated")) {
+        setIsLoading(false);
+      }
+    };
+
+    initializeBooking();
+  }, [authStatus, bookingId, pendingBookingCreation, formData]);
 
   const fetchBookingDetails = async () => {
-    console.log("Booking ID being sent:", bookingId); // Add this before fetch
-
+    if (!bookingId) return;
+    
     try {
       setIsLoading(true);
       const response = await fetch(`/api/payments?bookingId=${bookingId}`, {
@@ -64,7 +106,6 @@ console.log(sessionStorage.getItem('statusPayment'))
       const data = await response.json();
       setBookingData(data.booking);
       setTotalAmount(data.totalAmount);
-      setAmount(data.totalAmount.toFixed(2));
       setIsPaid(data.isPaid);
     } catch (error) {
       console.error('Error fetching booking:', error);
@@ -74,7 +115,7 @@ console.log(sessionStorage.getItem('statusPayment'))
     }
   };
 
-  const handleCreateBooking = async (formData: any) => {
+  const handleCreateBooking = async (formData:any) => {
     try {
       setIsProcessing(true);
       const response = await fetch('/api/bookings', {
@@ -90,27 +131,37 @@ console.log(sessionStorage.getItem('statusPayment'))
 
       const data = await response.json();
       
-      // Store the new booking ID
+      // Store the new booking ID and clean up session storage
       if (typeof window !== 'undefined') {
         sessionStorage.setItem('bookingId', data.booking.id);
-        // Clear the pending status
         sessionStorage.removeItem('bookingFormData');
         sessionStorage.removeItem('statusPayment');
       }
 
       toast.success("Booking created successfully!");
       
-      // Fetch the newly created booking details
-      await fetchBookingDetails();
+      // Set the booking data directly instead of fetching again
+      setBookingData(data.booking);
+      
+      // Calculate the total amount directly
+      let total = data.booking.package.price;
+      if (data.booking.addOns && data.booking.addOns.length) {
+        data.booking.addOns.forEach((addon :any)=> {
+          total += addon.price;
+        });
+      }
+      setTotalAmount(total);
+      
     } catch (error) {
       toast.error("Failed to create booking");
       console.error(error);
     } finally {
       setIsProcessing(false);
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e:any) => {
     e.preventDefault();
     
     if (authStatus === "unauthenticated") {
@@ -130,8 +181,8 @@ console.log(sessionStorage.getItem('statusPayment'))
       return;
     }
 
-    if (!amount || parseFloat(amount) <= 0) {
-      toast.error("Please enter a valid amount");
+    if (totalAmount <= 0) {
+      toast.error("Invalid payment amount");
       return;
     }
 
@@ -144,7 +195,7 @@ console.log(sessionStorage.getItem('statusPayment'))
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          bookingId:cleanBookingId,
+          bookingId: cleanBookingId,
           amount: totalAmount.toFixed(2),
           paymentMethod: 'Credit Card'
         }), 
@@ -165,13 +216,14 @@ console.log(sessionStorage.getItem('statusPayment'))
         sessionStorage.removeItem('bookingId');
       }
       
-      // Redirect to booking details or confirmation page after a delay
+      // Redirect to booking details after a delay
       setTimeout(() => {
         router.push('/dash');
       }, 3000);
       
-    } catch (error: any) {
-      toast.error(error.message || "Payment failed. Please try again.");
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : "Payment failed. Please try again.";
+      toast.error(errorMessage);
     } finally {
       setIsProcessing(false);
     }
@@ -207,7 +259,7 @@ console.log(sessionStorage.getItem('statusPayment'))
             <div className="bg-emerald-50 p-4 rounded-lg border border-emerald-100">
               <CheckCircle className="h-12 w-12 mx-auto text-emerald-600 mb-2" />
               <p className="text-lg font-medium text-emerald-800">
-                Payment of ${parseFloat(amount).toFixed(2)} was successful!
+                Payment of ${totalAmount.toFixed(2)} was successful!
               </p>
               <p className="text-sm text-emerald-700 mt-2">
                 Your booking has been confirmed.
@@ -218,7 +270,7 @@ console.log(sessionStorage.getItem('statusPayment'))
               onClick={goToBookings}
               className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-lg font-medium shadow-md"
             >
-              Go to dashboard
+              Go to dash
             </Button>
           </div>
         </div>
@@ -272,9 +324,9 @@ console.log(sessionStorage.getItem('statusPayment'))
                   <span>${bookingData.package.price.toFixed(2)}</span>
                 </div>
                 
-                {bookingData.addOns.length > 0 && (
+                {bookingData.addOns && bookingData.addOns.length > 0 && (
                   <>
-                    {bookingData.addOns.map((addon: any) => (
+                    {bookingData.addOns.map((addon) => (
                       <div key={addon.id} className="flex justify-between text-sm">
                         <span>{addon.name}:</span>
                         <span>${addon.price.toFixed(2)}</span>
@@ -292,12 +344,13 @@ console.log(sessionStorage.getItem('statusPayment'))
           )}
 
           <form className="space-y-6" onSubmit={handleSubmit}>
-       <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-  <div className="flex justify-between font-medium text-lg">
-    <span>Total Amount:</span>
-    <span>${totalAmount.toFixed(2)}</span>
-  </div>
-</div>
+            <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
+              <div className="flex justify-between font-medium text-lg">
+                <span>Total Amount:</span>
+                <span>${totalAmount.toFixed(2)}</span>
+              </div>
+            </div>
+            
             <Button 
               type="submit" 
               className="w-full py-6 bg-emerald-600 hover:bg-emerald-700 text-lg font-medium shadow-md"
@@ -311,7 +364,7 @@ console.log(sessionStorage.getItem('statusPayment'))
               ) : (
                 <>
                   <CreditCard className="mr-2 h-5 w-5" />
-                  Pay ${parseFloat(amount || "0").toFixed(2)}
+                  Pay ${totalAmount.toFixed(2)}
                 </>
               )}
             </Button>
