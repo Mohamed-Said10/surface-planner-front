@@ -1,3 +1,4 @@
+import { LogoutButton } from "@/components/ui/LogoutButton";
 import { Camera, HelpCircle, Home, LogOut, Settings, Video } from "lucide-react";
 
 export default function Sidebar() {
@@ -48,10 +49,7 @@ export default function Sidebar() {
                             <HelpCircle className="h-4 w-4 mr-3" />
                             Help & Support
                         </a>
-                        <a href="/" className="w-full text-sm flex items-center px-4 py-2 text-left text-red-600 hover:bg-red-50 rounded-lg">
-                            <LogOut className="h-4 w-4 mr-3" />
-                            Sign Out
-                        </a>
+                        <LogoutButton />
                     </div>
                 </div>
             </div>

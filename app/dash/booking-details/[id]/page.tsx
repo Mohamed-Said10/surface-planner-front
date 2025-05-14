@@ -1,12 +1,15 @@
 'use client';
 import { Check, Calendar, HelpCircle, X, Download, Send } from "lucide-react";
-import { useState } from "react";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'support';
   timestamp: string;
 }
+
 const bookingStatus = {
   id: "1279486",
   steps: [
@@ -18,26 +21,46 @@ const bookingStatus = {
   ]
 };
 
-const bookingDetails = {
-  package: "Diamond Package",
-  addons: "Extra Fast Delivery Service",
-  propertyAddress: "103 Al Lu'lu Street, Jumeirah 3, Dubai",
-  scheduledDateTime: "Feb 12, 2025 6:23 am",
-  photographer: {
-    name: "Courtney Henry",
-    email: "michaelp@email.com",
-    phone: "+1 (555) 987-6543",
-    location: "Dubai UAE"
+interface BookingDetails{
+  id: string;
+  package: {
+    id: number,
+    name: string,
+    price: number,
+    description: string,
+    features: string[],
+    pricePerExtra: number
   }
-};
-
+  addOns: [{
+    id: string,
+    bookingId: string,
+    addonId: number,
+    name: string,
+    price: number
+  }];
+  buildingName: string;
+  street: string;
+  appointmentDate: string;
+  timeSlot: string;
+  photographer: {
+    name: string;
+    email: string;
+    phone: string;
+    location: string;
+  };
+}
 
 const timeSlots = [
   { id: 1, time: '9 AM - 12 PM', duration: '3 hours', price: 250 },
   { id: 2, time: '1 PM - 4 PM', duration: '3 hours', price: 250 },
   { id: 3, time: '5 PM - 8 PM', duration: '3 hours', price: 250 }
 ];
+
 export default function BookingDetailsPage() {
+
+  const router = useRouter();
+  const { id: bookingId } = useParams();
+  const [bookingDetails, setBookingDetails] = useState<BookingDetails>();
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -55,6 +78,25 @@ export default function BookingDetailsPage() {
     }
   ]);
   const [newMessage, setNewMessage] = useState("");
+
+  useEffect(() => {
+    console.log("Booking ID:", bookingId);
+    if (bookingId) {
+      const fetchBookingDetails = async () => {
+        const response = await fetch(`http://localhost:3000/api/bookings?id=${bookingId}`, {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+        });
+        const data = await response.json();
+        setBookingDetails(data.bookings[0]);
+        console.log("Booking Details:", data.bookings[0]);
+      };
+
+      fetchBookingDetails();
+    }
+  }, [bookingId]);
 
   const handleSendMessage = () => {
     if (newMessage.trim()) {
@@ -82,6 +124,11 @@ export default function BookingDetailsPage() {
     console.log("Cancelling with reason:", cancelReason);
     setIsCancelModalOpen(false);
   };
+
+  if (!bookingDetails) {
+    return <div>Loading...</div>; // Show loading state while data is being fetched
+  }
+
   return (
 
     <div className="p-4 space-y-4">
@@ -120,23 +167,23 @@ export default function BookingDetailsPage() {
             <div className="w-8 h-8 text-orange-600 justify-center flex items-center">💎</div>
           </div>
           <div>
-            <h2 className="text-md font-semibold">{bookingDetails.package}</h2>
-            <p className="text-sm text-gray-600">Addons: {bookingDetails.addons}</p>
+            <h2 className="text-md font-semibold">{bookingDetails.package.name}</h2>
+            <p className="text-sm text-gray-600">Addons: {bookingDetails.addOns.map((addOn) => addOn.name).join(', ')}</p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-8 mb-4">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Property Address</h3>
-            <p className="text-sm font-medium">{bookingDetails.propertyAddress}</p>
+            <p className="text-sm font-medium">{bookingDetails.buildingName}, {bookingDetails.street}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Scheduled Date & Time</h3>
-            <p className="text-sm font-medium">{bookingDetails.scheduledDateTime}</p>
+            <p className="text-sm font-medium">{new Date(bookingDetails.appointmentDate).toLocaleDateString() + " at " + bookingDetails.timeSlot}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Assigned Photographer</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.name}</p>
+            <p className="text-sm font-medium">{bookingDetails.photographer?.name || '—'}</p>
           </div>
         </div>
         <hr className="h-1 bg-red mb-4" />
@@ -173,28 +220,22 @@ export default function BookingDetailsPage() {
         <div className="grid grid-cols-4 gap-8">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Name</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.name}</p>
+            <p className="text-sm font-medium">{bookingDetails.photographer?.name || '—'}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Email</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.email}</p>
+            <p className="text-sm font-medium">{bookingDetails.photographer?.email || '—'}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.phone}</p>
+            <p className="text-sm font-medium">{bookingDetails.photographer?.phone || '—'}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Location</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.location}</p>
+            <p className="text-sm font-medium">{bookingDetails.photographer?.location || '—'}</p>
           </div>
         </div>
       </div>
-
-
-
-
-
-
 
 
       {/* Reschedule Modal */}
