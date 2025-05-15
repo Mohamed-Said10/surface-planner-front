@@ -1,9 +1,8 @@
 import Header from "@/components/dashboard/header/Header";
 import Sidebar from "@/components/dashboard/sidebar/Sidebar";
+import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import { Button } from "@/components/ui/button";
 import { Camera, Video, Home, Settings, HelpCircle, LogOut, Check } from "lucide-react";
-import Booking from "../(website)/booking/page";
-import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 
 const bookingStatus = {
   id: "1279486",
@@ -71,9 +70,11 @@ export default function HomePage() {
   return (
 
 
+  
     <div className="p-4 space-y-4">
       {/* Booking Status */}
-     <BookingStatusCard />
+        <BookingStatusCard />
+
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
