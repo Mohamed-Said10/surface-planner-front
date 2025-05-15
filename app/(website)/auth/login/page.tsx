@@ -65,7 +65,7 @@ export default function LoginAltPage() {
             redirectPath = "/photographer/dashboard";
             break;
           case "CLIENT":
-            redirectPath = "/client/dashboard";
+            redirectPath = "/dash";
             break;
           default:
             redirectPath = "/dash";
