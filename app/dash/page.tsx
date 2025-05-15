@@ -2,6 +2,20 @@
 
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { Camera, Video, Home, Settings, HelpCircle, LogOut, Check } from "lucide-react";
+
+
+
+const bookingStatus = {
+  id: "1279486",
+  steps: [
+    { label: "Booking Requested", date: "May 5, 5:54 AM", completed: true },
+    { label: "Photographer Assigned", date: "May 5, 8:54 AM", completed: true },
+    { label: "Shoot in Progress", date: "May 5, 8:54 AM", completed: true },
+    { label: "Editing", date: "Currently", completed: false, inProgress: true },
+    { label: "Order Delivery", date: "Expected May 8, 2025", completed: false }
+  ]
+};
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -126,6 +140,34 @@ export default function HomePage() {
 
   return (
   <div className="p-4 space-y-4">
+
+    {/* Booking Status */}
+    <div className="bg-white rounded-lg shadow p-6">
+        <h2 className="text-sm font-semibold mb-6">Booking#{bookingStatus.id} Status</h2>
+        <div className="relative grid justify-between grid-cols-5">
+          {bookingStatus.steps.map((step, index) => (
+            <div key={index} className="col-span-1 flex flex-col items-left text-left relative z-10">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 
+              ${step.completed ? 'bg-emerald-500' : step.inProgress ? 'bg-orange-500' : 'bg-gray-200'}`}>
+                {step.completed ? (
+                  <Check className="h-5 w-5 text-white" />
+                ) : (
+                  <div className="w-2 h-2 rounded-full bg-white" />
+                )}
+              </div>
+              <div className="text-xs font-medium">{step.label}</div>
+              <div className="text-xs text-gray-500">{step.date}</div>
+            </div>
+          ))}
+          {/* Progress Lines */}
+          <div className="absolute top-3 left-0 w-full h-[2px] flex">
+            <div className="h-full bg-emerald-500" style={{ width: '60%' }} />
+            <div className="h-full bg-orange-500" style={{ width: '15%' }} />
+            <div className="h-full bg-gray-200" style={{ width: '25%' }} />
+          </div>
+        </div>
+      </div>
+
     {/* Stats */}
     <div className="grid grid-cols-2 gap-4">
       <div className="bg-white rounded-lg shadow p-4">
