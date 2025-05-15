@@ -1,65 +1,66 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import {
-  ArrowLeft,
-  Box,
-  Camera,
-  Video,
-  Home,
-  Settings,
-  HelpCircle,
-  LogOut,
-  CreditCard,
-  PencilLine,
-  Upload,
-} from "lucide-react";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
-import { DefaultSession } from "next-auth";
-import { imageConfigDefault } from "next/dist/shared/lib/image-config";
+import { Session } from "next-auth";
+import { CreditCard, PencilLine, Upload } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 declare module "next-auth" {
-  interface Session extends DefaultSession {
-    user?: {
+  interface Session {
+    user: {
       id: string;
-      firstname?: string;
-      lastname?: string;
-      phoneNumber?: string;
-      dateOfBirth?: string;
-      address?: string;
-      city?: string;
-      state?: string;
-      zipcode?: string;
-      role?: string;
-    } & DefaultSession["user"];
+      name?: string | null;
+      email?: string | null;
+      image?: string | null;
+    };
   }
 }
 
-interface Session {
-  user?: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    image?: string | null;
-    role?: string;
-    firstname?: string;
-    lastname?: string;
-    phoneNumber?: string;
-    dateOfBirth?: string;
-    address?: string;
-    city?: string;
-    state?: string;
-    zipcode?: string;
-  };
+interface UserData {
+  id: string;
+  firstname: string;
+  lastname: string;
+  email: string;
+  image: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  address: string;
+  city: string;
+  state: string;
+  zipcode: string;
 }
 
+interface FormData {
+  firstName: string;
+  lastName: string;
+  email: string;
+  day: string;
+  month: string;
+  year: string;
+  address: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  phoneNumber: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const months = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December"
+];
+
 export default function SettingsPage() {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState("account");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -71,158 +72,150 @@ export default function SettingsPage() {
     address: "",
     city: "",
     state: "",
-    zipcode: "",
+    zipCode: "",
     phoneNumber: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   });
 
-  useEffect(() => {
-    const fetchAndSetUserData = async () => {
-      if (!session?.user?.id) return;
-
-      console.log("Session user ID:", session.user.id);
-
+  const fetchUserData = async () => {
+    if (session?.user?.id) {
       try {
-        // Set basic info from session immediately
-        setFormData((prev) => ({
-          ...prev,
-          firstName: session.user?.firstname || "",
-          lastName: session.user?.lastname || "",
-          email: session.user?.email || "",
-        }));
-
-        // Fetch additional details from API
+        setLoading(true);
         const response = await fetch(
           `http://localhost:3000/api/users/${session.user.id}`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-            },
-            credentials: "include",
-          }
+          { credentials: "include" }
         );
-
-        console.log("Response from API:", response);
-
-        if (!response.ok) throw new Error("Failed to fetch user details");
-
-        const userData = await response.json();
-
-        // Parse date of birth if available
-        let day = "",
-          month = "",
-          year = "";
-        if (userData.dateOfBirth) {
-          const dob = new Date(userData.dateOfBirth);
-          day = dob.getDate().toString();
-          month = dob.toLocaleString("default", { month: "long" });
-          year = dob.getFullYear().toString();
-        }
-
-        setFormData((prev) => ({
-          ...prev,
-          address: userData.address || "",
-          day: userData.day || "",
-          month: userData.month || "",
-          year: userData.year || "",
-          city: userData.city || "",
-          state: userData.state || "",
-          zipcode: userData.zipcode || "",
-          phoneNumber: userData.phoneNumber || "",
-          image: userData.image || "",
-        }));
+  
+        if (!response.ok) throw new Error("Failed to fetch user data");
+  
+        const data = await response.json();
+        setUserData(data);
+  
+        const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
+        const fullImageUrl = data.image ? `http://localhost:3000${data.image}` : null;
+  
+        // Get month name from date (0-indexed)
+        const monthName = dob ? months[dob.getMonth()] : "";
+  
+        setFormData({
+          firstName: data.firstname || "",
+          lastName: data.lastname || "",
+          email: data.email || "",
+          day: dob ? dob.getDate().toString() : "",
+          month: monthName,
+          year: dob ? dob.getFullYear().toString() : "",
+          address: data.address || "",
+          city: data.city || "",
+          state: data.state || "",
+          zipCode: data.zipcode || "",
+          phoneNumber: data.phoneNumber || "",
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+  
+        setSelectedImage(fullImageUrl);
       } catch (error) {
-        console.error("Failed to load user data:", error);
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
       }
-    };
+    }
+  };
 
-    fetchAndSetUserData();
-  }, [session?.user?.id]);
+  useEffect(() => {
+    fetchUserData();
+  }, [session]);
 
-  const handleSaveAccount = async () => {
+  const handleUpdateUser = async () => {
     if (!session?.user?.id) return;
   
     try {
-      const formDataToSend = new FormData();
-      
-      // Add all form fields to FormData
-      formDataToSend.append("firstname", formData.firstName);
-      formDataToSend.append("lastname", formData.lastName);
-      formDataToSend.append("email", formData.email);
-      formDataToSend.append("address", formData.address);
-      formDataToSend.append("city", formData.city);
-      formDataToSend.append("state", formData.state);
-      formDataToSend.append("zipcode", formData.zipcode);
-      formDataToSend.append("phoneNumber", formData.phoneNumber);
-  
-      // Add date of birth if available
+      const formPayload = new FormData();
+      formPayload.append('firstname', formData.firstName);
+      formPayload.append('lastname', formData.lastName);
+      //formPayload.append('email', formData.email);
+      formPayload.append('address', formData.address);
+      formPayload.append('city', formData.city || '');
+      formPayload.append('state', formData.state || '');
+      formPayload.append('zipcode', formData.zipCode || '');
+      formPayload.append('phoneNumber', formData.phoneNumber || '');
+
       if (formData.day && formData.month && formData.year) {
-        const monthIndex = [
-          "January", "February", "March", "April", "May", "June",
-          "July", "August", "September", "October", "November", "December"
-        ].indexOf(formData.month);
-        
-        const dob = new Date(
-          parseInt(formData.year),
-          monthIndex,
-          parseInt(formData.day)
-        ).toISOString();
-        formDataToSend.append("dateOfBirth", dob);
+        const monthNumber = months.indexOf(formData.month) + 1;
+        const dateString = `${formData.year}-${String(monthNumber).padStart(2, '0')}-${formData.day.padStart(2, '0')}`;
+        formPayload.append('dateOfBirth', dateString);
       }
-  
-      // Add image file if selected
+
       if (fileInputRef.current?.files?.[0]) {
-        formDataToSend.append("image", fileInputRef.current.files[0]);
+        formPayload.append('image', fileInputRef.current.files[0]);
       }
-  
-      const response = await fetch(
-        `http://localhost:3000/api/users/${session.user.id}`,
-        {
-          method: "PUT",
-          credentials: "include",
-          body: formDataToSend,
-        }
-      );
-  
+
+      const response = await fetch(`http://localhost:3000/api/users/${session.user.id}`, {
+        method: 'PUT',
+        credentials: 'include',
+        body: formPayload
+      });
+
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update user");
+        throw new Error(errorData.message || 'Failed to update user');
       }
-  
-      const updatedUser = await response.json();
-      
-      // Update form data with the response
-      setFormData(prev => ({
-        ...prev,
-        firstName: updatedUser.firstname || prev.firstName,
-        lastName: updatedUser.lastname || prev.lastName,
-        email: updatedUser.email || prev.email,
-        image: updatedUser.image || prev.image,
-        address: updatedUser.address || prev.address,
-        city: updatedUser.city || prev.city,
-        state: updatedUser.state || prev.state,
-        zipcode: updatedUser.zipcode || prev.zipcode,
-        phoneNumber: updatedUser.phoneNumber || prev.phoneNumber,
-        // Handle date of birth if needed
-        ...(updatedUser.dateOfBirth && {
-          day: new Date(updatedUser.dateOfBirth).getDate().toString(),
-          month: new Date(updatedUser.dateOfBirth).toLocaleString('default', { month: 'long' }),
-          year: new Date(updatedUser.dateOfBirth).getFullYear().toString()
-        })
-      }));
-  
-      // Clear selected image if it was uploaded
-      if (fileInputRef.current?.files?.[0]) {
-        setSelectedImage(null);
-        fileInputRef.current.value = ''; // Clear the file input
-      }
-  
-      alert("Profile updated successfully!");
+
+      alert('Profile updated successfully!');
+      await fetchUserData();
     } catch (error) {
-      console.error("Failed to update user:", error);
-      alert(error instanceof Error ? error.message : "Failed to update profile");
+      console.error('Update error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update profile');
+    }
+  };
+
+  const handleUpdatePassword = async () => {
+    if (!formData.currentPassword || !formData.newPassword || !formData.confirmPassword) {
+      alert("Please fill in all password fields");
+      return;
+    }
+
+    if (formData.newPassword !== formData.confirmPassword) {
+      alert("New passwords don't match");
+      return;
+    }
+
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+    if (!passwordRegex.test(formData.newPassword)) {
+      alert("Password must contain at least 8 characters, including 1 uppercase, 1 lowercase, 1 number, and 1 special character");
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:3000/api/users/${session?.user?.id}/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentPassword: formData.currentPassword,
+          newPassword: formData.newPassword,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update password');
+      }
+
+      setFormData({
+        ...formData,
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
+
+      alert('Password updated successfully!');
+    } catch (error) {
+      console.error('Password update error:', error);
+      alert(error instanceof Error ? error.message : 'Failed to update password');
     }
   };
 
@@ -234,76 +227,12 @@ export default function SettingsPage() {
     const file = e.target.files?.[0];
     if (file) {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-      };
+      reader.onloadend = () => setSelectedImage(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const triggerImageUpload = () => {
-    fileInputRef.current?.click();
-  };
-
-  if (status === "loading") {
-    return <p>Loading user info...</p>;
-  }
-
-  if (!session || !session.user) {
-    return <p>User not logged in.</p>;
-  }
-
-  const handleUpdatePassword = async () => {
-    if (!session?.user?.id) return;
-  
-    // Validate passwords match
-    if (formData.newPassword !== formData.confirmPassword) {
-      alert("New passwords don't match!");
-      return;
-    }
-  
-    // Validate password strength (optional)
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
-    if (!passwordRegex.test(formData.newPassword)) {
-      alert("Password must contain at least 8 characters, 1 uppercase, 1 lowercase, 1 number, and 1 special character");
-      return;
-    }
-  
-    try {
-      const response = await fetch(
-        `http://localhost:3000/api/users/${session.user.id}/password`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          credentials: "include",
-          body: JSON.stringify({
-            currentPassword: formData.currentPassword,
-            newPassword: formData.newPassword,
-          }),
-        }
-      );
-  
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to update password");
-      }
-  
-      // Clear password fields after successful update
-      setFormData(prev => ({
-        ...prev,
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      }));
-  
-      alert("Password updated successfully!");
-    } catch (error) {
-      console.error("Failed to update password:", error);
-      alert(error instanceof Error ? error.message : "Failed to update password");
-    }
-  };
+  const triggerImageUpload = () => fileInputRef.current?.click();
 
   const renderAccountInfo = () => (
     <div className="space-y-6">
@@ -316,17 +245,8 @@ export default function SettingsPage() {
             {selectedImage ? (
               <img
                 src={selectedImage}
-                alt="Profile preview"
-                className="w-full h-full object-cover"
-              />
-            ) : formData.image ? (
-              <img
-                src={`http://localhost:3000${formData.image}`} // Changed to port 3000
                 alt="Profile"
                 className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/default-profile.png";
-                }}
               />
             ) : (
               <div className="w-full h-full bg-gray-200" />
@@ -389,6 +309,7 @@ export default function SettingsPage() {
           placeholder="Emailaddress@email.com"
           className="w-full rounded-lg border border-gray-300 px-4 py-2"
           value={formData.email}
+          readOnly  
           onChange={handleInputChange}
         />
       </div>
@@ -410,35 +331,18 @@ export default function SettingsPage() {
               </option>
             ))}
           </select>
-
           <select
             className="rounded-lg border border-gray-300 px-4 py-2"
             value={formData.month}
-            onChange={(e) =>
-              setFormData({ ...formData, month: e.target.value })
-            }
+            onChange={(e) => setFormData({ ...formData, month: e.target.value })}
           >
             <option value="">Month</option>
-            {[
-              "January",
-              "February",
-              "March",
-              "April",
-              "May",
-              "June",
-              "July",
-              "August",
-              "September",
-              "October",
-              "November",
-              "December",
-            ].map((month) => (
+            {months.map((month) => (
               <option key={month} value={month}>
                 {month}
               </option>
             ))}
           </select>
-
           <select
             className="rounded-lg border border-gray-300 px-4 py-2"
             value={formData.year}
@@ -498,9 +402,9 @@ export default function SettingsPage() {
 
       <div className="flex justify-end gap-4">
         <Button variant="outline">Cancel</Button>
-        <Button
+        <Button 
           className="bg-[#0F553E] hover:bg-[#0F553E]/90"
-          onClick={handleSaveAccount}
+          onClick={handleUpdateUser}
         >
           Save
         </Button>
@@ -657,9 +561,7 @@ export default function SettingsPage() {
           <nav className="flex gap-8 px-6">
             <button
               className={`py-4 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === "account"
-                  ? "text-[#0F553E] border-[#0F553E]"
-                  : "text-gray-500 border-transparent"
+                activeTab === "account" ? "text-[#0F553E] border-[#0F553E]" : "text-gray-500 border-transparent"
               }`}
               onClick={() => setActiveTab("account")}
             >
@@ -667,9 +569,7 @@ export default function SettingsPage() {
             </button>
             <button
               className={`py-4 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === "password"
-                  ? "text-[#0F553E] border-[#0F553E]"
-                  : "text-gray-500 border-transparent"
+                activeTab === "password" ? "text-[#0F553E] border-[#0F553E]" : "text-gray-500 border-transparent"
               }`}
               onClick={() => setActiveTab("password")}
             >
@@ -677,9 +577,7 @@ export default function SettingsPage() {
             </button>
             <button
               className={`py-4 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === "billing"
-                  ? "text-[#0F553E] border-[#0F553E]"
-                  : "text-gray-500 border-transparent"
+                activeTab === "billing" ? "text-[#0F553E] border-[#0F553E]" : "text-gray-500 border-transparent"
               }`}
               onClick={() => setActiveTab("billing")}
             >

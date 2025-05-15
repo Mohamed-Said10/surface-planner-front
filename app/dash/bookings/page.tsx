@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, Video, Box, Home, Settings, HelpCircle, LogOut } from "lucide-react";
-import { useSession } from "next-auth/react";
+import { RefreshCw } from "lucide-react";
 
 interface Booking {
   id: string;
@@ -12,123 +12,111 @@ interface Booking {
   appointmentDate: string;
   package: {
     name: string;
-    price: number; // ← add this
+    price: number;
   };
-  photographer?: {
+  addOns: Array<{
+    name: string;
+    price: number;
+  }>;
+  photographer: {
     firstname: string;
     lastname: string;
-  };
+  } | null;
   status: string;
-  addOns: {
-    name: string;
-    price: number; // ← add this if you use it
-  }[];
-}
-
-
-interface ApiResponse {
-  bookings: Booking[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    pages: number;
-  };
 }
 
 export default function BookingsPage() {
-  const [searchTerm, setSearchTerm] = useState("");
+  const { data: session, status } = useSession();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { data: session } = useSession();
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const fetchBookings = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await fetch('http://localhost:3000/api/bookings', {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch bookings');
+      }
+      
+      const data = await response.json();
+      setBookings(data.bookings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load bookings');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('http://localhost:3000/api/bookings', {
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch bookings');
-        }
-
-        const data: ApiResponse = await response.json();
-        setBookings(data.bookings);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'An unknown error occurred');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    if (session) {
+    if (status === 'authenticated') {
       fetchBookings();
     }
-  }, [session]);
+  }, [status]);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800";
       case "scheduled":
+      case "booking_created":
         return "bg-yellow-100 text-yellow-800";
       case "canceled":
         return "bg-red-100 text-red-800";
+      case "shoot_done":
       case "shoot done":
       case "booking_created":
         return "bg-blue-100 text-blue-800";
+      case "editing":
+        return "bg-purple-100 text-purple-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
   };
 
   const formatStatus = (status: string) => {
-    return status.split('_').map(word => 
-      word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
-    ).join(' ');
+    return status.toLowerCase()
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
   };
 
   const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
+    const options: Intl.DateTimeFormatOptions = { 
+      year: 'numeric', 
+      month: 'short', 
       day: 'numeric',
-      year: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
+    };
+    return new Date(dateString).toLocaleDateString('en-US', options);
   };
 
-  const formatLocation = (booking: Booking) => {
-    return `${booking.buildingName}, ${booking.street}`;
-  };
-
-  const formatPrice = (price: number) => {
-    console.log("price: ",price);
-    return `AED ${price.toFixed(2)}`;
-  };
-
-  const formatPhotographerName = (booking: Booking) => {
-    if (!booking.photographer) return "Not assigned";
-    return `${booking.photographer.firstname} ${booking.photographer.lastname}`;
-  };
-
-  const filteredBookings = bookings.filter(booking => 
-    formatLocation(booking).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.package.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    formatPhotographerName(booking).toLowerCase().includes(searchTerm.toLowerCase()) ||
-    booking.status.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredBookings = bookings.filter(booking => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      booking.buildingName.toLowerCase().includes(searchLower) ||
+      booking.street.toLowerCase().includes(searchLower) ||
+      booking.package.name.toLowerCase().includes(searchLower) ||
+      (booking.photographer && 
+        `${booking.photographer.firstname} ${booking.photographer.lastname}`
+          .toLowerCase().includes(searchLower)) ||
+      booking.status.toLowerCase().includes(searchLower)
+    );
+  });
 
   if (loading) {
     return (
-      <div className="p-4 flex justify-center items-center h-64">
+      <div className="p-4 flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
       </div>
     );
@@ -136,13 +124,15 @@ export default function BookingsPage() {
 
   if (error) {
     return (
-      <div className="p-4 bg-red-50 text-red-600 rounded-lg">
-        Error: {error}
+      <div className="p-4 space-y-4">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+          {error}
+        </div>
         <Button 
-          onClick={() => window.location.reload()} 
-          className="mt-2"
+          onClick={fetchBookings}
           variant="outline"
         >
+          <RefreshCw className="mr-2 h-4 w-4" />
           Retry
         </Button>
       </div>
@@ -152,7 +142,7 @@ export default function BookingsPage() {
   return (
     <div className="p-4">
       <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b">
+        <div className="p-4 border-b flex justify-between items-center">
           <Input
             type="search"
             placeholder="Search bookings..."
@@ -160,6 +150,14 @@ export default function BookingsPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
             className="max-w-md"
           />
+          <Button 
+            onClick={fetchBookings}
+            variant="outline"
+            size="sm"
+          >
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Refresh
+          </Button>
         </div>
 
         <div className="overflow-x-auto">
@@ -178,8 +176,11 @@ export default function BookingsPage() {
                 filteredBookings.map((booking) => (
                   <tr key={booking.id}>
                     <td className="px-6 py-4">
-                      <a href={`/dash/booking-details/${booking.id}`} className="text-sm underline text-[#0D4835]">
-                        {formatLocation(booking)}
+                      <a 
+                        href={`/dash/booking-details/${booking.id}`} 
+                        className="text-sm underline text-[#0D4835]"
+                      >
+                        {booking.buildingName}, {booking.street}
                       </a>
                       <div className="text-xs text-gray-500">
                         {formatDate(booking.appointmentDate)}
@@ -193,8 +194,7 @@ export default function BookingsPage() {
                             {booking.addOns.map(addon => {
                               if (addon.name.includes('Photo')) return '📸';
                               if (addon.name.includes('Video')) return '🎥';
-                              if (addon.name.includes('Car')) return '🚗';
-                              return '';
+                              return '✨';
                             }).join(' ')}
                           </span>
                         )}
@@ -202,12 +202,15 @@ export default function BookingsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {formatPrice(booking.package?.price)}
+                        AED {booking.package.price + 
+                            booking.addOns.reduce((sum, addon) => sum + addon.price, 0)}
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="text-sm text-gray-900">
-                        {formatPhotographerName(booking)}
+                        {booking.photographer ? 
+                          `${booking.photographer.firstname} ${booking.photographer.lastname}` : 
+                          'Not assigned'}
                       </div>
                     </td>
                     <td className="px-6 py-4">
@@ -219,8 +222,8 @@ export default function BookingsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-gray-500">
-                    {bookings.length === 0 ? 'No bookings found' : 'No matching bookings found'}
+                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                    {searchTerm ? 'No matching bookings found' : 'No bookings available'}
                   </td>
                 </tr>
               )}

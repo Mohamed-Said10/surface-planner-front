@@ -7,8 +7,71 @@ import { Input } from "@/components/ui/input";
 import { Layout } from "lucide-react";
 
 export default function SignupAltPage() {
+  const [formData, setFormData] = useState({
+    firstname: "",
+    lastname: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:3000/api/auth/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          firstname: formData.firstname,
+          lastname: formData.lastname,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        setError(errorData.error || "Something went wrong");
+      } else {
+        setSuccess("Signup successful! Please check your email to verify you account.");
+        setFormData({
+          firstname: "",
+          lastname: "",
+          email: "",
+          password: "",
+          confirmPassword: "",
+        });
+      }
+    } catch (err) {
+      setError("Failed to connect to the server");
+    } finally {
+      setLoading(false);
+    }
+  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -22,18 +85,41 @@ export default function SignupAltPage() {
           <h2 className="text-2xl font-bold text-center">Sign Up</h2>
           <p className="mt-2 text-gray-600 text-center">Enter your details to sign up</p>
 
-          <form className="mt-8 space-y-6">
+          <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-2 gap-4">
-              <Input placeholder="First Name" />
-              <Input placeholder="Last Name" />
+            <Input
+                name="firstname"
+                placeholder="First Name"
+                value={formData.firstname}
+                onChange={handleChange}
+                required
+              />
+              <Input
+                name="lastname"
+                placeholder="Last Name"
+                value={formData.lastname}
+                onChange={handleChange}
+                required
+              />
             </div>
 
-            <Input type="email" placeholder="Email" />
+            <Input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+            />
 
             <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
+            <Input
+                type="password"
+                name="password"
                 placeholder="Password"
+                value={formData.password}
+                onChange={handleChange}
+                required
               />
               <button
                 type="button"
@@ -46,9 +132,13 @@ export default function SignupAltPage() {
 
             <div className="relative">
               <Input
-                type={showConfirmPassword ? "text" : "password"}
-                placeholder="Confirm Password"
-              />
+                  type="password"
+                  name="confirmPassword"
+                  placeholder="Confirm Password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  required
+                />
               <button
                 type="button"
                 className="absolute right-3 top-1/2 -translate-y-1/2"
@@ -58,8 +148,15 @@ export default function SignupAltPage() {
               </button>
             </div>
 
-            <Button className="w-full bg-[#0F553E] hover:bg-[#0F553E]/90">
-              Sign Up
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {success && <p className="text-green-500 text-sm">{success}</p>}
+
+            <Button
+              className="w-full bg-[#0F553E] hover:bg-[#0F553E]/90"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? "Signing Up..." : "Sign Up"}
             </Button>
 
             <Button
