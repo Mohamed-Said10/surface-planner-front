@@ -12,7 +12,7 @@ const nextConfig = {
         destination: "http://localhost:3000/api/auth/:path*", // Proxy to backend
       },
     ];
-  },
+  }, 
 
   async headers() {
     return [
