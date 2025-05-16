@@ -568,17 +568,19 @@ export default function SettingsPage() {
               Account Information
             </button>
             <button
-              className={`py-4 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === "password" ? "text-[#0F553E] border-[#0F553E]" : "text-gray-500 border-transparent"
-              }`}
+              className={`py-4 text-sm font-medium border-b-2 -mb-px ${activeTab === "password"
+                  ? "text-[#0F553E] border-[#0F553E]"
+                  : "text-gray-500 border-transparent"
+                }`}
               onClick={() => setActiveTab("password")}
             >
               Password
             </button>
             <button
-              className={`py-4 text-sm font-medium border-b-2 -mb-px ${
-                activeTab === "billing" ? "text-[#0F553E] border-[#0F553E]" : "text-gray-500 border-transparent"
-              }`}
+              className={`py-4 text-sm font-medium border-b-2 -mb-px ${activeTab === "billing"
+                  ? "text-[#0F553E] border-[#0F553E]"
+                  : "text-gray-500 border-transparent"
+                }`}
               onClick={() => setActiveTab("billing")}
             >
               Billing
