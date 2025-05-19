@@ -12,7 +12,7 @@ const nextConfig = {
         destination: "http://localhost:3000/api/:path*", // Proxy ALL API requests
       },
     ];
-  },
+  }, 
 
   async headers() {
     return [

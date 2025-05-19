@@ -194,7 +194,7 @@ export default function HomePage() {
                           if (addon.name.includes('Video')) return '🎥';
                           return '✨';
                         }).join(' ')}
-                      </span>
+                      </span> 
                     )}
                   </div>
                 </td>
