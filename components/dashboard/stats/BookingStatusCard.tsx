@@ -70,9 +70,9 @@ const BookingStatusCard = () => {
     const statusMap: Record<string, string> = {
       BOOKING_CREATED: "Booking Requested",
       PHOTOGRAPHER_ASSIGNED: "Photographer Assigned",
-      SHOOT_IN_PROGRESS: "Shoot in Progress",
-      EDITING_IN_PROGRESS: "Editing",
-      ORDER_DELIVERED: "Order Delivery"
+      SHOOTING: "Shoot in Progress",
+      EDITING: "Editing",
+      COMPLETED: "Order Delivery"
     };
 
     // Get all possible statuses in order
