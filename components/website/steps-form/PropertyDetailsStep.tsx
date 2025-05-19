@@ -75,7 +75,7 @@ export default function PropertyDetailsStep({ formData, updateFormData, onNext }
           onChange={(e) => updateFormData({ ...formData, buildingName: e.target.value })}
           required
         /> */}
-        <DubaiSearchBox initialValue={formData.buildingName || ''} onLocationSelect={(data)=>{
+        <DubaiSearchBox  initialValue={formData.buildingName || ''} onLocationSelect={(data)=>{
           console.log(data);
           updateFormData({ ...formData, buildingName: data.building !== '' ? data.building : data.subcommunity })
         }}/>
@@ -104,6 +104,7 @@ export default function PropertyDetailsStep({ formData, updateFormData, onNext }
           <input
             type="text"
             placeholder="Unit Number"
+
             className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
             value={formData.unitNumber || ''}
             onChange={(e) => {

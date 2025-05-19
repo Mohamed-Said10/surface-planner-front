@@ -34,15 +34,14 @@ export default function Booking() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
   };
 
-  const handleSubmit = async () => {
-    setFormData({...formData, isLoading: true})
-    console.log('Form submitted with data:', formData);
-    const req = await sendBookingRequest(formData);
-    setTimeout(() => {
-      setFormData({...formData, isLoading: false});
-    }, 1000);
-    
-  };
+  // const handleSubmit = async () => {
+  //   setFormData({...formData, isLoading: true})
+  //   console.log('Form submitted with data:', formData);
+  //   const req = await sendBookingRequest(formData);
+  //   setTimeout(() => {
+  //     setFormData({...formData, isLoading: false});
+  //   }, 1000);
+  // };
 
   const renderStep = () => {
     switch (currentStep) {
@@ -86,7 +85,7 @@ export default function Booking() {
           <SummaryStep
           onNext={handleNext}
             formData={formData}
-            onSubmit={handleSubmit}
+            // onSubmit={handleSubmit}
             onPrevious={handlePrevious}
           />
         );

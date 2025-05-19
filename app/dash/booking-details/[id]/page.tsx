@@ -1,43 +1,63 @@
 'use client';
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Check, Calendar, HelpCircle, X, Download, Send } from "lucide-react";
-import { useState } from "react";
+
+interface Booking {
+  id: string;
+  status: string;
+  package: {
+    name: string;
+    price: number;
+    description: string;
+  };
+  addOns: Array<{
+    name: string;
+    price: number;
+  }>;
+  buildingName: string;
+  street: string;
+  unitNumber: string;
+  floor: string;
+  appointmentDate: string;
+  timeSlot: string;
+  photographer: {
+    firstname: string;
+    lastname: string;
+    email: string;
+    phoneNumber: string;
+    name?: string;
+    phone?: string;
+    location?: string;
+  } | null;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  notes: string | null;
+}
+
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'support';
   timestamp: string;
 }
-const bookingStatus = {
-  id: "1279486",
-  steps: [
-    { label: "Booking Requested", date: "May 5, 5:54 AM", completed: true },
-    { label: "Photographer Assigned", date: "May 5, 8:54 AM", completed: true },
-    { label: "Shoot in Progress", date: "May 5, 8:54 AM", completed: true },
-    { label: "Editing", date: "Currently", completed: false, inProgress: true },
-    { label: "Order Delivery", date: "Expected May 8, 2025", completed: false }
-  ]
-};
-
-const bookingDetails = {
-  package: "Diamond Package",
-  addons: "Extra Fast Delivery Service",
-  propertyAddress: "103 Al Lu'lu Street, Jumeirah 3, Dubai",
-  scheduledDateTime: "Feb 12, 2025 6:23 am",
-  photographer: {
-    name: "Courtney Henry",
-    email: "michaelp@email.com",
-    phone: "+1 (555) 987-6543",
-    location: "Dubai UAE"
-  }
-};
-
 
 const timeSlots = [
   { id: 1, time: '9 AM - 12 PM', duration: '3 hours', price: 250 },
   { id: 2, time: '1 PM - 4 PM', duration: '3 hours', price: 250 },
   { id: 3, time: '5 PM - 8 PM', duration: '3 hours', price: 250 }
 ];
+
 export default function BookingDetailsPage() {
+  const { id } = useParams();
+  const { data: session } = useSession();
+  const [booking, setBooking] = useState<Booking | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Modal states (preserved from your original code)
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -56,6 +76,100 @@ export default function BookingDetailsPage() {
   ]);
   const [newMessage, setNewMessage] = useState("");
 
+  // Fetch booking details
+  useEffect(() => {
+    const fetchBookingDetails = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch(`http://localhost:3000/api/bookings?id=${id}`, {
+          credentials: 'include'
+        });
+        
+        if (!response.ok) throw new Error('Failed to fetch booking');
+        
+        const data = await response.json();
+        if (data.bookings.length > 0) {
+          setBooking(data.bookings[0]);
+        }
+      } catch (error) {
+        console.error("Error fetching booking:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (session && id) {
+      fetchBookingDetails();
+    }
+  }, [session, id]);
+
+  // Status steps based on booking status
+  const getStatusSteps = () => {
+    if (!booking) return [];
+    
+    const statusOrder = [
+      "BOOKING_CREATED",
+      "PHOTOGRAPHER_ASSIGNED", 
+      "SHOOT_IN_PROGRESS",
+      "EDITING",
+      "DELIVERED"
+    ];
+    
+    const currentIndex = statusOrder.indexOf(booking.status);
+    
+    return [
+      { 
+        label: "Booking Requested", 
+        date: new Date(booking.appointmentDate).toLocaleString('en-US', { 
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+        }),
+        completed: currentIndex >= 0
+      },
+      { 
+        label: "Photographer Assigned", 
+        date: booking.photographer ? 
+          new Date().toLocaleString('en-US', { 
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+          }) : 'Pending',
+        completed: currentIndex >= 1
+      },
+      { 
+        label: "Shoot in Progress", 
+        date: currentIndex >= 2 ? 
+          new Date().toLocaleString('en-US', { 
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+          }) : 'Pending',
+        completed: currentIndex >= 2
+      },
+      { 
+        label: "Editing", 
+        date: currentIndex >= 3 ? 'Currently' : 'Pending',
+        completed: currentIndex >= 3,
+        inProgress: currentIndex === 3
+      },
+      {
+        label: "Order Delivery",
+        date: currentIndex >= 4
+          ? new Date().toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+            })
+          : 'Expected ' +
+            new Date(
+              new Date(booking.appointmentDate).setDate(
+                new Date(booking.appointmentDate).getDate() + 3
+              )
+            ).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+            }),
+        completed: currentIndex >= 4,
+      }
+    ];
+  };
+
+  // Message handlers (preserved from your original code)
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       setMessages([
@@ -72,28 +186,45 @@ export default function BookingDetailsPage() {
   };
 
   const handleReschedule = () => {
-    // Handle reschedule logic here
     console.log("Rescheduling with:", { selectedDate, selectedTimeSlot, rescheduleReason });
     setIsRescheduleModalOpen(false);
   };
 
   const handleCancel = () => {
-    // Handle cancellation logic here
     console.log("Cancelling with reason:", cancelReason);
     setIsCancelModalOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="p-4 flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (!booking) {
+    return (
+      <div className="p-4 text-center text-gray-500">
+        Booking not found
+      </div>
+    );
+  }
+
+  const statusSteps = getStatusSteps();
+  const completedSteps = statusSteps.filter(step => step.completed).length;
+  const inProgressStep = statusSteps.findIndex(step => step.inProgress);
+
   return (
-
     <div className="p-4 space-y-4">
-
-      {/* Booking Status */}
+      {/* Booking Status - Dynamic */}
       <div className="bg-white rounded-lg shadow p-6">
         <h2 className="text-sm font-semibold mb-6">Status</h2>
         <div className="relative grid justify-between grid-cols-5">
-          {bookingStatus.steps.map((step, index) => (
+          {statusSteps.map((step, index) => (
             <div key={index} className="col-span-1 flex flex-col items-left text-left relative z-10">
               <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 
-                      ${step.completed ? 'bg-emerald-500' : step.inProgress ? 'bg-orange-500' : 'bg-gray-200'}`}>
+                    ${step.completed ? 'bg-emerald-500' : step.inProgress ? 'bg-orange-500' : 'bg-gray-200'}`}>
                 {step.completed ? (
                   <Check className="h-5 w-5 text-white" />
                 ) : (
@@ -104,52 +235,74 @@ export default function BookingDetailsPage() {
               <div className="text-xs text-gray-500">{step.date}</div>
             </div>
           ))}
-          {/* Progress Lines */}
+          {/* Progress Lines - Dynamic */}
           <div className="absolute top-3 left-0 w-full h-[2px] flex">
-            <div className="h-full bg-emerald-500" style={{ width: '60%' }} />
-            <div className="h-full bg-orange-500" style={{ width: '15%' }} />
-            <div className="h-full bg-gray-200" style={{ width: '25%' }} />
+            <div className="h-full bg-emerald-500" style={{ width: `${(completedSteps / (statusSteps.length - 1)) * 100}%` }} />
+            <div className="h-full bg-orange-500" style={{ width: `${inProgressStep >= 0 ? '15%' : '0%'}` }} />
+            <div className="h-full bg-gray-200" style={{ width: `${100 - ((completedSteps / (statusSteps.length - 1)) * 100 - (inProgressStep >= 0 ? 15 : 0))}` }} />
           </div>
         </div>
       </div>
 
-      {/* Package Details */}
+      {/* Package Details - Dynamic */}
       <div className="bg-white rounded-lg shadow p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="p-2 bg-orange-100 rounded-lg">
             <div className="w-8 h-8 text-orange-600 justify-center flex items-center">💎</div>
           </div>
           <div>
-            <h2 className="text-md font-semibold">{bookingDetails.package}</h2>
-            <p className="text-sm text-gray-600">Addons: {bookingDetails.addons}</p>
+            <h2 className="text-md font-semibold">{booking.package.name}</h2>
+            <p className="text-sm text-gray-600">
+              Addons: {booking.addOns.map(a => a.name).join(', ') || 'None'}
+            </p>
           </div>
         </div>
 
         <div className="grid grid-cols-3 gap-8 mb-4">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Property Address</h3>
-            <p className="text-sm font-medium">{bookingDetails.propertyAddress}</p>
+            <p className="text-sm font-medium">
+              {booking.buildingName}, {booking.street}, Unit {booking.unitNumber}, Floor {booking.floor}
+            </p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Scheduled Date & Time</h3>
-            <p className="text-sm font-medium">{bookingDetails.scheduledDateTime}</p>
+            <p className="text-sm font-medium">
+              {new Date(booking.appointmentDate).toLocaleString('en-US', {
+                month: 'short', day: 'numeric', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+              })} ({booking.timeSlot})
+            </p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Assigned Photographer</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.name}</p>
+            <p className="text-sm font-medium">
+              {booking.photographer ? 
+                `${booking.photographer.firstname} ${booking.photographer.lastname}` : 
+                'Not assigned yet'}
+            </p>
           </div>
         </div>
         <hr className="h-1 bg-red mb-4" />
         <div className="grid gap-4 grid-cols-4">
-          <button onClick={() => setIsRescheduleModalOpen(true)} className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+          <button 
+            onClick={() => setIsRescheduleModalOpen(true)}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
+          >
             <Calendar className="h-4 w-4" />
             Reschedule Booking
           </button>
-          <button onClick={() => setIsChatModalOpen(true)} className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+          <button 
+            onClick={() => setIsChatModalOpen(true)}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
+          >
             <HelpCircle className="h-4 w-4" />
             Contact Support
           </button>
-          <button onClick={() => setIsCancelModalOpen(true)} className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50">
+          <button 
+            onClick={() => setIsCancelModalOpen(true)}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50"
+          >
             <X className="h-4 w-4" />
             Cancel Booking
           </button>
@@ -159,6 +312,40 @@ export default function BookingDetailsPage() {
           </button>
         </div>
       </div>
+
+      {/* Photographer Details - Dynamic */}
+      {booking.photographer && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">Photographer Details</h2>
+            <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
+              View Portfolio →
+            </button>
+          </div>
+
+          <hr className="h-1 bg-red mb-2" />
+          <div className="grid grid-cols-4 gap-8">
+            <div>
+              <h3 className="text-sm text-gray-500 mb-1">Name</h3>
+              <p className="text-sm font-medium">
+                {booking.photographer.firstname} {booking.photographer.lastname}
+              </p>
+            </div>
+            <div>
+              <h3 className="text-sm text-gray-500 mb-1">Email</h3>
+              <p className="text-sm font-medium">{booking.photographer.email}</p>
+            </div>
+            <div>
+              <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
+              <p className="text-sm font-medium">{booking.photographer.phoneNumber}</p>
+            </div>
+            <div>
+              <h3 className="text-sm text-gray-500 mb-1">Location</h3>
+              <p className="text-sm font-medium">Dubai UAE</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Photographer Details */}
       <div className="bg-white rounded-lg shadow p-6">
@@ -173,28 +360,22 @@ export default function BookingDetailsPage() {
         <div className="grid grid-cols-4 gap-8">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Name</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.name}</p>
+            <p className="text-sm font-medium">{booking.photographer?.name}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Email</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.email}</p>
+            <p className="text-sm font-medium">{booking.photographer?.email}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.phone}</p>
+            <p className="text-sm font-medium">{booking.photographer?.phone}</p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Location</h3>
-            <p className="text-sm font-medium">{bookingDetails.photographer.location}</p>
+            <p className="text-sm font-medium">{booking.photographer?.location}</p>
           </div>
         </div>
       </div>
-
-
-
-
-
-
 
 
       {/* Reschedule Modal */}
@@ -338,7 +519,7 @@ export default function BookingDetailsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-[500px] h-[600px] flex flex-col">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Help for Booking #{bookingStatus.id}</h2>
+              <h2 className="text-xl font-semibold">Help for Booking #{booking.id}</h2>
               <button onClick={() => setIsChatModalOpen(false)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>
