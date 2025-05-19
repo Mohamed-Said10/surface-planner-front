@@ -27,6 +27,9 @@ interface Booking {
     lastname: string;
     email: string;
     phoneNumber: string;
+    name?: string;
+    phone?: string;
+    location?: string;
   } | null;
   firstName: string;
   lastName: string;
@@ -516,7 +519,7 @@ export default function BookingDetailsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-[500px] h-[600px] flex flex-col">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Help for Booking #{bookingStatus.id}</h2>
+              <h2 className="text-xl font-semibold">Help for Booking #{booking.id}</h2>
               <button onClick={() => setIsChatModalOpen(false)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>
