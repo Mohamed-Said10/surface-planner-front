@@ -41,7 +41,7 @@ interface FormData {
   address: string;
   city: string;
   state: string;
-  zipCode: string;
+  zipcode: string;
   phoneNumber: string;
   currentPassword: string;
   newPassword: string;
@@ -72,7 +72,7 @@ export default function SettingsPage() {
     address: "",
     city: "",
     state: "",
-    zipCode: "",
+    zipcode: "",
     phoneNumber: "",
     currentPassword: "",
     newPassword: "",
@@ -109,7 +109,8 @@ export default function SettingsPage() {
           address: data.address || "",
           city: data.city || "",
           state: data.state || "",
-          zipCode: data.zipcode || "",
+          image: fullImageUrl || "",
+          zipcode: data.zipcode || "",
           phoneNumber: data.phoneNumber || "",
           currentPassword: "",
           newPassword: "",
@@ -140,7 +141,7 @@ export default function SettingsPage() {
       formPayload.append('address', formData.address);
       formPayload.append('city', formData.city || '');
       formPayload.append('state', formData.state || '');
-      formPayload.append('zipcode', formData.zipCode || '');
+      formPayload.append('zipcode', formData.zipcode || '');
       formPayload.append('phoneNumber', formData.phoneNumber || '');
 
       if (formData.day && formData.month && formData.year) {
