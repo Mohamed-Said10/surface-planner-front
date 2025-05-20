@@ -43,7 +43,8 @@ export default function LoginAltPage() {
       const session = await sessionResponse.json();
 
       console.log("Session response:", session); // Add this log
-
+      console.log(session?.user);
+      
 
       if (!session?.user?.role) {
         throw new Error("No role assigned to user");
