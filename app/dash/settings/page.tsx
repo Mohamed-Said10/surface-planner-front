@@ -84,7 +84,7 @@ export default function SettingsPage() {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3000/api/users/${session.user.id}`,
+          `https://planner-back-end-six.vercel.app/api/users/${session.user.id}`,
           { credentials: "include" }
         );
   
@@ -94,7 +94,7 @@ export default function SettingsPage() {
         setUserData(data);
   
         const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
-        const fullImageUrl = data.image ? `http://localhost:3000${data.image}` : null;
+        const fullImageUrl = data.image ? `https://planner-back-end-six.vercel.app${data.image}` : null;
   
         // Get month name from date (0-indexed)
         const monthName = dob ? months[dob.getMonth()] : "";
@@ -154,7 +154,7 @@ export default function SettingsPage() {
         formPayload.append('image', fileInputRef.current.files[0]);
       }
 
-      const response = await fetch(`http://localhost:3000/api/users/${session.user.id}`, {
+      const response = await fetch(`https://planner-back-end-six.vercel.app/api/users/${session.user.id}`, {
         method: 'PUT',
         credentials: 'include',
         body: formPayload
@@ -191,7 +191,7 @@ export default function SettingsPage() {
     }
 
     try {
-      const response = await fetch(`http://localhost:3000/api/users/${session?.user?.id}/password`, {
+      const response = await fetch(`https://planner-back-end-six.vercel.app/api/users/${session?.user?.id}/password`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',

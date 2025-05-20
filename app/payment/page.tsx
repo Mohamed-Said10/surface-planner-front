@@ -94,7 +94,7 @@ export default function PaymentPage() {
     
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:3000/api/payments?bookingId=${bookingId}`, {
+      const response = await fetch(`https://planner-back-end-six.vercel.app/api/payments?bookingId=${bookingId}`, {
         method: 'GET',
         credentials: 'include',
       });
