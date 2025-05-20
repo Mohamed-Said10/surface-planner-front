@@ -9,7 +9,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3000/api/:path*", // Proxy ALL API requests
+        destination: "https://planner-back-end-six.vercel.app/api/:path*", // Proxy ALL API requests
       },
     ];
   }, 

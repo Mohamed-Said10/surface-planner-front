@@ -17,7 +17,7 @@ export function sendBookingRequest(data: any) {
 export function createBooking(data: any) {
   const apiEndpoint = `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/bookings`;
 
-  fetch("http://localhost:3000/api/bookings", {
+  fetch("https://planner-back-end-six.vercel.app/api/bookings", {
     method: 'POST',
     credentials: 'include', // This is crucial for sending cookies
     headers: {

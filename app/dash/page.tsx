@@ -32,7 +32,7 @@ export default function HomePage() {
     try {
       console.log('Fetching bookings with session:', session);
       
-      const response = await fetch('http://localhost:3000/api/bookings', {
+      const response = await fetch('https://planner-back-end-six.vercel.app/api/bookings', {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',

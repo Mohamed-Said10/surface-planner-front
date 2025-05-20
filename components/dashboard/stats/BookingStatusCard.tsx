@@ -38,7 +38,7 @@ const BookingStatusCard = () => {
     const fetchStatusHistory = async () => {
       try {
         const response = await fetch(
-          'http://localhost:3000/api/bookings/status-history/last',
+          'https://planner-back-end-six.vercel.app/api/bookings/status-history/last',
           {
             credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
