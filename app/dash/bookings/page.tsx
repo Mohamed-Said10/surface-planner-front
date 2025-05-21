@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +32,13 @@ export default function BookingsPage() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
+  const requestInProgress = useRef(false);
+
   const fetchBookings = async () => {
+    
+    if (requestInProgress.current) return; // Skip if already fetching
+    requestInProgress.current = true;
+
     try {
       setLoading(true);
       setError(null);

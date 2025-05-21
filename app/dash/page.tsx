@@ -1,7 +1,7 @@
 "use client";
 
 import { useSession } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import { Check } from "lucide-react";
 
@@ -28,53 +28,43 @@ export default function HomePage() {
     activeBookings: 0
   });
 
-  const fetchBookings = async () => {
+  const requestInProgress = useRef(false); // Track ongoing requests
+
+  const fetchBookings = useCallback(async () => {
+    if (requestInProgress.current) return; // Skip if already fetching
+    requestInProgress.current = true;
+    
     try {
-      console.log('Fetching bookings with session:', session);
-      
       const response = await fetch('http://localhost:3000/api/bookings', {
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        }
+        headers: { 'Content-Type': 'application/json' }
       });
-      
-      console.log('Response status:', response.status);
-      
+
       if (response.status === 401) {
-        // Handle unauthorized (session likely expired)
         throw new Error('Session expired. Please login again.');
       }
-      
+
       const data = await response.json();
-      console.log('Bookings data:', data);
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to fetch bookings');
-      }
+      if (!response.ok) throw new Error(data.error || 'Failed to fetch bookings');
       
       return data;
-    } catch (error) {
-      console.error('Fetch error:', error);
-      throw error;
+    } finally {
+      requestInProgress.current = false;
     }
-  };
+  }, [session]);
 
   useEffect(() => {
-    if (status === 'loading') return;
+    if (status !== 'authenticated' || !session) return;
 
     const loadBookings = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        if (!session) {
-          throw new Error('No active session found');
-        }
-        
         const data = await fetchBookings();
-        setBookings(data.bookings);
+        if (!data) return; // Skip if request was aborted
         
+        setBookings(data.bookings);
         setStats({
           totalBookings: data.pagination.total,
           activeBookings: data.bookings.filter(
@@ -82,7 +72,6 @@ export default function HomePage() {
           ).length
         });
       } catch (err) {
-        console.error('Loading error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load bookings');
       } finally {
         setLoading(false);
@@ -90,7 +79,8 @@ export default function HomePage() {
     };
 
     loadBookings();
-  }, [status, session]);
+  }, [status, session, fetchBookings]);
+
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {

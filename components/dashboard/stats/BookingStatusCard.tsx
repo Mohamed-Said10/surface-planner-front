@@ -1,7 +1,7 @@
 "use client";
 import { Check } from "lucide-react";
 import Router from "next/router";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 interface StatusHistory {
   id: string;
@@ -36,38 +36,64 @@ const BookingStatusCard = () => {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const requestMade = useRef(false); // Tracks if request has been made
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
+    // Skip if request already made or component is unmounted
+    if (requestMade.current) return;
+
     const fetchStatusHistory = async () => {
+      requestMade.current = true;
+      abortControllerRef.current = new AbortController();
+
       try {
+        setLoading(true);
+        setError(null);
+
         const response = await fetch(
-          "http://localhost:3000/api/bookings/status-history/last",
+          "/api/bookings/status-history/last",
           {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
+            signal: abortControllerRef.current.signal
           }
         );
+
         if (!response.ok) {
           const errorData = await response.json();
-          // Pass the entire error response as string
           throw new Error(JSON.stringify(errorData));
         }
-        const data = await response.json();
 
-        // Transform the API data into the format your component expects
+        const data = await response.json();
         const transformedData = transformStatusHistory(data);
         setBookingStatus(transformedData);
       } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "An unknown error occurred"
-        );
+        // Proper type narrowing for the error
+        if (err instanceof Error) {
+          if (err.name !== 'AbortError') {
+            setError(err.message);
+          }
+        } else if (typeof err === 'string') {
+          setError(err);
+        } else {
+          setError("An unknown error occurred");
+        }
       } finally {
         setLoading(false);
       }
     };
 
     fetchStatusHistory();
+
+    return () => {
+      // Cleanup: abort any ongoing request when component unmounts
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, []);
+
 
   const transformStatusHistory = (apiData: {
     bookingId: string;
