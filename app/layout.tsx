@@ -1,9 +1,11 @@
 // app/layout.tsx
 import type { Metadata } from 'next'
+import { getServerSession } from 'next-auth'
 import SessionProviderWrapper from './SessionProviderWrapper'
 import './globals.css'
+import { authOptions } from '@/lib/auth'
 
-const geistSans ={ subsets: ['latin'] }
+const geistSans = { subsets: ['latin'] }
 const geistMono = { subsets: ['latin'] }
 
 export const metadata: Metadata = {
@@ -11,15 +13,17 @@ export const metadata: Metadata = {
   description: 'Professional property services',
 }
 
-export default function RootLayout({ 
+export default async function RootLayout({ 
   children 
 }: { 
   children: React.ReactNode 
 }) {
+  const session = await getServerSession(authOptions)
+  
   return (
     <html lang="en">
       <body>
-        <SessionProviderWrapper>
+        <SessionProviderWrapper session={session}>
           {children}
         </SessionProviderWrapper>
       </body>

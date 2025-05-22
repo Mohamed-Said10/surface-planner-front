@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, Calendar, HelpCircle, X, Download, Send } from "lucide-react";
@@ -76,9 +76,15 @@ export default function BookingDetailsPage() {
   ]);
   const [newMessage, setNewMessage] = useState("");
 
+  const requestInProgress = useRef(false);
+
   // Fetch booking details
   useEffect(() => {
     const fetchBookingDetails = async () => {
+
+      if (requestInProgress.current) return; // Skip if already fetching
+      requestInProgress.current = true;
+
       try {
         setLoading(true);
         const response = await fetch(`https://planner-back-end-six.vercel.app/api/bookings?id=${id}`, {
