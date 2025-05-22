@@ -13,9 +13,9 @@ export function LogoutButton() {
       // Sign out and redirect to login
       await signOut({
         redirect: false,
-        callbackUrl: 'http://localhost:3001/auth/login',
+        callbackUrl: 'https://sp-dashboard-nine.vercel.app/auth/login',
       });
-      window.location.href = 'http://localhost:3001/auth/login';
+      window.location.href = 'https://sp-dashboard-nine.vercel.app/auth/login';
     } catch (error) {
       console.error('Logout error:', error);
       setIsLoading(false);
