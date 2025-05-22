@@ -36,14 +36,15 @@ export default function LoginAltPage() {
       }
 
       // Fetch user session to get role information
-      const sessionResponse = await fetch("http://localhost:3000/api/auth/session", {
+      const sessionResponse = await fetch("https://planner-back-end-six.vercel.app/api/auth/session", {
         method: "GET",
         credentials: "include", // Make sure cookies are included in the request
       }); 
       const session = await sessionResponse.json();
 
       console.log("Session response:", session); // Add this log
-
+      console.log(session?.user);
+      
 
       if (!session?.user?.role) {
         throw new Error("No role assigned to user");

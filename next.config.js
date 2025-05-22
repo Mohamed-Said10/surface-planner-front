@@ -9,7 +9,7 @@ const nextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:3000/api/:path*", // Proxy ALL API requests
+        destination: "https://planner-back-end-six.vercel.app/api/:path*", // Proxy ALL API requests
       },
     ];
   }, 
@@ -20,7 +20,7 @@ const nextConfig = {
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
-          { key: "Access-Control-Allow-Origin", value: "http://localhost:3001" },
+          { key: "Access-Control-Allow-Origin", value: "https://sp-dashboard-nine.vercel.app" },
           { key: "Access-Control-Allow-Methods", value: "GET,POST,PUT,DELETE,OPTIONS" },
           { key: "Access-Control-Allow-Headers", value: "Content-Type, Authorization" },
         ],
