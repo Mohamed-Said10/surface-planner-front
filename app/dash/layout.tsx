@@ -6,6 +6,7 @@ import Footer from '@/components/shared/Footer';
 import { ThemeProvider } from '@/components/theme-provider';
 import Sidebar from '@/components/dashboard/sidebar/Sidebar';
 import Header from '@/components/dashboard/header/Header';
+import AuthChecker from '../AuthChecker';
 
 const inter = Inter({ subsets: ['latin'] });
 

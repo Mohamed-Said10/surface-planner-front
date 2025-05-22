@@ -114,7 +114,7 @@ export default function SignupAltPage() {
 
             <div className="relative">
             <Input
-                type="password"
+                type={showPassword ? "text" : "password"}
                 name="password"
                 placeholder="Password"
                 value={formData.password}
@@ -132,7 +132,7 @@ export default function SignupAltPage() {
 
             <div className="relative">
               <Input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   name="confirmPassword"
                   placeholder="Confirm Password"
                   value={formData.confirmPassword}

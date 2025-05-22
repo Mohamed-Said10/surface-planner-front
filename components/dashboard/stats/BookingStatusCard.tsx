@@ -52,7 +52,7 @@ const BookingStatusCard = () => {
         setError(null);
 
         const response = await fetch(
-          "/api/bookings/status-history/last",
+          "http://localhost:3000/api/bookings/status-history/last",
           {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
