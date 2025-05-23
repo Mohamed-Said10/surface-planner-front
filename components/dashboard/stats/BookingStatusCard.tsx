@@ -38,16 +38,17 @@ const BookingStatusCard = () => {
   const [error, setError] = useState<string | null>(null);
   const requestMade = useRef(false); // Tracks if request has been made
   const abortControllerRef = useRef<AbortController | null>(null);
+  const ignoreResponse = useRef(false); // Add this ref
 
   useEffect(() => {
-    // Skip if request already made or component is unmounted
-    if (requestMade.current) return;
+    // Create new controller for each request
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    ignoreResponse.current = false; // Reset ignore flag
 
     const fetchStatusHistory = async () => {
-      requestMade.current = true;
-      abortControllerRef.current = new AbortController();
-
       try {
+        console.log("Starting fetch request");
         setLoading(true);
         setError(null);
 
@@ -56,43 +57,52 @@ const BookingStatusCard = () => {
           {
             credentials: "include",
             headers: { "Content-Type": "application/json" },
-            signal: abortControllerRef.current.signal
+            signal
           }
         );
 
+        if (ignoreResponse.current) return; // Skip if component unmounted
+        
         if (!response.ok) {
           const errorData = await response.json();
-          throw new Error(JSON.stringify(errorData));
+          throw new Error(errorData.message || "Failed to fetch status");
         }
 
         const data = await response.json();
+        
+        if (ignoreResponse.current) return; // Skip if component unmounted
+        
+        if (!data?.bookingId) {
+          throw new Error("No booking data available");
+        }
+
         const transformedData = transformStatusHistory(data);
         setBookingStatus(transformedData);
       } catch (err) {
-        // Proper type narrowing for the error
+        if (ignoreResponse.current) return; // Skip if component unmounted
+        
         if (err instanceof Error) {
           if (err.name !== 'AbortError') {
             setError(err.message);
           }
-        } else if (typeof err === 'string') {
-          setError(err);
-        } else {
-          setError("An unknown error occurred");
         }
       } finally {
-        setLoading(false);
+        if (!ignoreResponse.current) {
+          setLoading(false);
+        }
       }
     };
 
     fetchStatusHistory();
 
     return () => {
-      // Cleanup: abort any ongoing request when component unmounts
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      // Mark that we should ignore the response
+      ignoreResponse.current = true;
+      // Abort any ongoing request
+      abortControllerRef.current?.abort();
     };
   }, []);
+
 
 
   const transformStatusHistory = (apiData: {
@@ -178,7 +188,8 @@ const BookingStatusCard = () => {
       steps,
     };
   };
-
+  // Debug logs for state changes
+  console.log("Current state:", { loading, error, bookingStatus });
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">

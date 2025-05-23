@@ -87,7 +87,7 @@ export default function BookingDetailsPage() {
 
       try {
         setLoading(true);
-        const response = await fetch(`https://planner-back-end-six.vercel.app/api/bookings?id=${id}`, {
+        const response = await fetch(`http://localhost:3000/api/bookings?id=${id}`, {
           credentials: 'include'
         });
         
