@@ -53,7 +53,7 @@ const BookingStatusCard = () => {
         setError(null);
 
         const response = await fetch(
-          "http://localhost:3000/api/bookings/status-history/last",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
           {
             credentials: "include",
             headers: { "Content-Type": "application/json" },

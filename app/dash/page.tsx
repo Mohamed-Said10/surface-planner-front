@@ -35,7 +35,7 @@ export default function HomePage() {
     requestInProgress.current = true;
     
     try {
-      const response = await fetch('http://localhost:3000/api/bookings', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' }
       });

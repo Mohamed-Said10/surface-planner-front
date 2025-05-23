@@ -36,7 +36,7 @@ export default function LoginAltPage() {
       }
 
       // Fetch user session to get role information
-      const sessionResponse = await fetch("http://localhost:3000/api/auth/session", {
+      const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/session`, {
         method: "GET",
         credentials: "include", // Make sure cookies are included in the request
       }); 

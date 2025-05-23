@@ -16,7 +16,7 @@ export function LogoutButton() {
       await signOut({ redirect: false })
 
       // 2. Then call our API to clear cookies
-      const res = await fetch('http://localhost:3000/api/auth/signout', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/signout`, {
         method: 'POST' // or 'GET' - both work now
       })
 
