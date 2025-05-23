@@ -1,34 +1,26 @@
 'use client'
-
 import { useSession } from 'next-auth/react'
 import { useRouter, usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
-declare module "next-auth" {
-    interface Session {
-      user: {
-        id: string;
-        name?: string | null;
-        email?: string | null;
-        image?: string | null;
-        role: string
-      };
-    }
-  }
-
-const publicRoutes = ['/auth/login', '/auth/register', '/auth/login']
+const publicRoutes = ['/auth/login', '/auth/register']
 
 export default function AuthChecker() {
   const { data: session, status } = useSession()
   const router = useRouter()
   const pathname = usePathname()
   const [checked, setChecked] = useState(false)
+  const initialCheckDone = useRef(false)
 
   const isPublic = publicRoutes.includes(pathname)
 
   useEffect(() => {
     // Don't check auth until session is fully loaded
     if (status === 'loading') return
+
+    // Prevent multiple checks
+    if (initialCheckDone.current) return
+    initialCheckDone.current = true
 
     if (isPublic) {
       setChecked(true)
@@ -40,13 +32,14 @@ export default function AuthChecker() {
       return
     }
 
-    console.log('Session:', session)
-
-    // Wait until session is fully loaded even if status is 'authenticated'
-    if (!session || !session.user) return
+    // Session exists but user data might be loading
+    if (!session?.user) {
+      console.warn('Session exists but user data not loaded')
+      return
+    }
 
     const role = session.user.role?.toLowerCase()
-    if (role != 'client') {
+    if (role !== 'client') {
       router.replace('/auth/login')
       return
     }
@@ -54,7 +47,6 @@ export default function AuthChecker() {
     setChecked(true)
   }, [status, session, pathname, router, isPublic])
 
-  // Gate rendering until auth check passes
   if (!checked) {
     return <div className="fixed inset-0 bg-white/50 backdrop-blur-sm z-50" />
   }
