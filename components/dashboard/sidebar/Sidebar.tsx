@@ -74,7 +74,7 @@ export default function Sidebar() {
           <div className="flex items-center mb-4">
             {session?.user?.image ? (
               <Image
-                src={`https://planner-back-end-six.vercel.app${session.user.image}`}
+                src={`${process.env.NEXT_PUBLIC_API_URL}${session.user.image}`}
                 alt="Profile"
                 width={40}
                 height={40}

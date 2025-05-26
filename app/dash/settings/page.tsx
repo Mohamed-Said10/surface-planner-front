@@ -85,7 +85,7 @@ export default function SettingsPage() {
       try {
         setLoading(true);
         const response = await fetch(
-          `http://localhost:3000/api/users/${session.user.id}`,
+          `${process.env.NEXT_PUBLIC_API_URL}/api/users/${session.user.id}`,
           { credentials: "include" }
         );
   
@@ -95,7 +95,7 @@ export default function SettingsPage() {
         setUserData(data);
   
         const dob = data.dateOfBirth ? new Date(data.dateOfBirth) : null;
-        const fullImageUrl = data.image ? `https://planner-back-end-six.vercel.app${data.image}` : null;
+        const fullImageUrl = data.image ? `${process.env.NEXT_PUBLIC_API_URL}${data.image}` : null;
   
         // Get month name from date (0-indexed)
         const monthName = dob ? months[dob.getMonth()] : "";
