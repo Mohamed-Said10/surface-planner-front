@@ -11,7 +11,7 @@ const nextConfig = {
     const isDevelopment = process.env.NODE_ENV === 'development';
     const apiBaseUrl = isDevelopment 
       ? 'http://localhost:3000' 
-      : process.env.NEXT_PUBLIC_API_URL || 'https://planner-back-end-six.vercel.app';
+      : process.env.NEXT_PUBLIC_API_URL;
 
     return [
       {
@@ -24,7 +24,7 @@ const nextConfig = {
   async headers() {
     const allowedOrigin = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://sp-dashboard-nine.vercel.app';
+      : process.env.NEXT_PUBLIC_FRONTEND_URL;
 
     return [
       {

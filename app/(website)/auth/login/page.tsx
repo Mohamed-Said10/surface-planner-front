@@ -24,6 +24,8 @@ export default function LoginAltPage() {
     setIsLoading(true);
 
     try {
+      
+      console.log("process.env.NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL);
       const result = await signIn("credentials", {
         email,
         password,
@@ -36,6 +38,7 @@ export default function LoginAltPage() {
       }
 
       // Fetch user session to get role information
+      console.log("process.env.NEXT_PUBLIC_API_URL for login", process.env.NEXT_PUBLIC_API_URL);
       const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/session`, {
         method: "GET",
         credentials: "include", // Make sure cookies are included in the request
@@ -43,7 +46,7 @@ export default function LoginAltPage() {
       const session = await sessionResponse.json();
 
       console.log("Session response:", session); // Add this log
-      console.log(session?.user);
+      console.log("Session user:", session?.user);
       
 
       if (!session?.user?.role) {
