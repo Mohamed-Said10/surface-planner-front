@@ -25,6 +25,18 @@ export default function Header() {
                 setPageTitle('Completed Projects');
                 setPageSubtitle('Browse your completed projects and media.');
                 break;
+            case '/dash/photographer':
+                setPageTitle('Dashboard photographer');
+                setPageSubtitle("Here's the overview of your latest bookings.");
+                break;
+            case '/dash/photographer/bookings':
+                setPageTitle('Photographer - My Bookings');
+                setPageSubtitle('View and manage your upcoming bookings.');
+                break;
+            case '/dash/photographer/completed':
+                setPageTitle('Photographer - Completed Projects');
+                setPageSubtitle('Browse your completed projects and media.');
+                break;
             case '/dash/settings':
                 setPageTitle('Settings');
                 setPageSubtitle('Manage your account settings and preferences.');
