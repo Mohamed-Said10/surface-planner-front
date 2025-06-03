@@ -1,6 +1,6 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { Camera, HelpCircle, Home, LogOut, Settings, Video } from "lucide-react";
+import { Camera, HelpCircle, Home, LogOut, Settings, CircleDollarSign } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -30,6 +30,7 @@ export default function Sidebar() {
   const rolePath = user.role === 'photographer' ? '/photographer' : '';
   const basePath = `${DASH_BASE}${rolePath}`;
 
+  const subPath = user.role === 'photographer' ? '/payments' : '/completed';
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
       <div className="p-4 border-b">
@@ -65,15 +66,15 @@ export default function Sidebar() {
         </a>
 
         <a
-          href={`${basePath}/completed`}
+          href={`${basePath}${subPath}`}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive(`${basePath}/completed`) 
+            isActive(`${basePath}${subPath}`) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
-          <Video className="h-5 w-5 mr-3" />
-          Completed Projects
+          <CircleDollarSign className="h-5 w-5 mr-3" />
+          {user.role === 'photographer' ? 'Payments' : 'Completed Projects'}
         </a>
       </nav>
 
@@ -107,7 +108,7 @@ export default function Sidebar() {
           </div>
           <div className="space-y-1">
             <a 
-              href={`${basePath}/settings`}
+              href='/dash/settings'
               className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
                 isActive('/dash/settings') 
                   ? 'bg-gray-100 text-[#0F553E]' 
@@ -118,7 +119,7 @@ export default function Sidebar() {
               Settings
             </a>
             <a 
-              href={`${basePath}/support`}
+              href='/dash/support'
               className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
                 isActive('/dash/support') 
                   ? 'bg-gray-100 text-[#0F553E]' 
