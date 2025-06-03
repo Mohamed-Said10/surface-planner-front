@@ -1,5 +1,4 @@
 "use client";
-
 import { LogoutButton } from "@/components/ui/LogoutButton";
 import { Camera, HelpCircle, Home, LogOut, Settings, Video } from "lucide-react";
 import { useSession } from "next-auth/react";
@@ -29,13 +28,7 @@ export default function Sidebar() {
   };
 
   const rolePath = user.role === 'photographer' ? '/photographer' : '';
-
-  // Full base path
   const basePath = `${DASH_BASE}${rolePath}`;
-
-
-  // const isPhotographer = user.role === 'photographer';
-  // const basePath = isPhotographer ? '/dash/photographer' : '/dash';
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
