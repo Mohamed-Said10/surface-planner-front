@@ -4,8 +4,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
-import UpComingBookings from '@/components/dashboard/booking/UpComingBookings';
-import CompletedBookings from '@/components/dashboard/booking/CompletedBookings';
+import BookingsTable from '@/components/shared/bookingsTable';
 
 interface Booking {
   id: string;
@@ -27,12 +26,49 @@ interface Booking {
   status: string;
 }
 
+const upcomingBookings = [
+  {
+    id: 1,
+    location: "Dubai Marina",
+    dateTime: new Date().toISOString(),
+    price: 120.5,
+    package: "Premium",
+    customer: "John Doe",
+  },
+  {
+    id: 2,
+    location: "Burj Khalifa",
+    dateTime: new Date().toISOString(),
+    price: 99.9,
+    package: "Standard",
+    customer: "Alice Smith",
+  },
+];
+
+const completedBookings = [
+  {
+    id: 3,
+    location: "Desert Safari",
+    dateTime: new Date().toISOString(),
+    price: 150.0,
+    package: "Adventure",
+    customer: "David Lee",
+  },
+  {
+    id: 4,
+    location: "Atlantis The Palm",
+    dateTime: new Date().toISOString(),
+    price: 199.5,
+    package: "Luxury",
+    customer: "Emma Johnson",
+  },
+];
+
 export default function BookingsPage() {
   const { data: session, status } = useSession();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState("");
 
   const requestInProgress = useRef(false);
 
@@ -71,18 +107,6 @@ export default function BookingsPage() {
     }
   }, [status]);
 
-  const filteredBookings = bookings.filter(booking => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      booking.buildingName?.toLowerCase().includes(searchLower) ||
-      booking.street.toLowerCase().includes(searchLower) ||
-      booking.package.name.toLowerCase().includes(searchLower) ||
-      (booking.photographer && 
-        `${booking.photographer.firstname} ${booking.photographer.lastname}`
-          .toLowerCase().includes(searchLower)) ||
-      booking.status.toLowerCase().includes(searchLower)
-    );
-  });
 
   if (loading) {
     return (
@@ -111,11 +135,11 @@ export default function BookingsPage() {
 
   return (
     <div className="p-4 space-y-4">
-      {/* Recent UpComing Bookings */}
-    <UpComingBookings />
+      {/* Upcoming Bookings */}
+      <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
 
-    {/* Recent Completed Bookings */}
-    <CompletedBookings />
+      {/* Completed Bookings */}
+      <BookingsTable title="Completed Bookings" bookings={completedBookings} />
     </div>
   );
 }

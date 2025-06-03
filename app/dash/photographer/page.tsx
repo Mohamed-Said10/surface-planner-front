@@ -1,15 +1,8 @@
 "use client";
-
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import { Check, CalendarDays, DollarSign, Wallet, Star } from "lucide-react"
-import UpComingBookings from '@/components/dashboard/booking/UpComingBookings';
-import CompletedBookings from '@/components/dashboard/booking/CompletedBookings';
-
-
-
-
+import BookingsTable from '@/components/shared/bookingsTable';
 
 const bookingStatus = {
   id: "1279486",
@@ -21,6 +14,44 @@ const bookingStatus = {
     { label: "Order Delivery", date: "Expected May 8, 2025", completed: false }
   ]
 };
+
+const upcomingBookings = [
+  {
+    id: 1,
+    location: "Dubai Marina",
+    dateTime: new Date().toISOString(),
+    price: 120.5,
+    package: "Premium",
+    customer: "John Doe",
+  },
+  {
+    id: 2,
+    location: "Burj Khalifa",
+    dateTime: new Date().toISOString(),
+    price: 99.9,
+    package: "Standard",
+    customer: "Alice Smith",
+  },
+];
+
+const completedBookings = [
+  {
+    id: 3,
+    location: "Desert Safari",
+    dateTime: new Date().toISOString(),
+    price: 150.0,
+    package: "Adventure",
+    customer: "David Lee",
+  },
+  {
+    id: 4,
+    location: "Atlantis The Palm",
+    dateTime: new Date().toISOString(),
+    price: 199.5,
+    package: "Luxury",
+    customer: "Emma Johnson",
+  },
+];
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -175,11 +206,11 @@ export default function HomePage() {
       </div>
     </div>
 
-    {/* Recent UpComing Bookings */}
-    <UpComingBookings />
+    {/* Upcoming Bookings */}
+    <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
 
-    {/* Recent Completed Bookings */}
-    <CompletedBookings />
+    {/* Completed Bookings */}
+    <BookingsTable title="Completed Bookings" bookings={completedBookings} />
 
   </div>
 );
