@@ -10,42 +10,40 @@ export default function Header() {
     const [pageTitle, setPageTitle] = useState('Dashboard');
     const [pageSubtitle, setPageSubtitle] = useState("Here's the overview of your latest bookings.");
 
+    const user = {
+        role: 'photographer', 
+    };
+
     useEffect(() => {
-        // Update title whenever pathname changes
-        switch(pathname) {
+        const isPhotographer = user?.role === 'photographer';
+        const basePath = isPhotographer
+        ? pathname.replace('/dash/photographer', '/dash')
+        : pathname;
+
+
+        switch (basePath) {
             case '/dash':
-                setPageTitle('Dashboard');
-                setPageSubtitle("Here's the overview of your latest bookings.");
-                break;
+            setPageTitle(isPhotographer ? 'Dashboard Photographer' : 'Dashboard');
+            setPageSubtitle("Here's the overview of your latest bookings.");
+            break;
             case '/dash/bookings':
-                setPageTitle('My Bookings');
-                setPageSubtitle('View and manage your upcoming bookings.');
-                break;
+            setPageTitle(isPhotographer ? 'Photographer - My Bookings' : 'My Bookings');
+            setPageSubtitle('View and manage your upcoming bookings.');
+            break;
             case '/dash/completed':
-                setPageTitle('Completed Projects');
-                setPageSubtitle('Browse your completed projects and media.');
-                break;
-            case '/dash/photographer':
-                setPageTitle('Dashboard photographer');
-                setPageSubtitle("Here's the overview of your latest bookings.");
-                break;
-            case '/dash/photographer/bookings':
-                setPageTitle('Photographer - My Bookings');
-                setPageSubtitle('View and manage your upcoming bookings.');
-                break;
-            case '/dash/photographer/completed':
-                setPageTitle('Photographer - Completed Projects');
-                setPageSubtitle('Browse your completed projects and media.');
-                break;
+            setPageTitle(isPhotographer ? 'Photographer - Completed Projects' : 'Completed Projects');
+            setPageSubtitle('Browse your completed projects and media.');
+            break;
             case '/dash/settings':
-                setPageTitle('Settings');
-                setPageSubtitle('Manage your account settings and preferences.');
-                break;
+            setPageTitle('Settings');
+            setPageSubtitle('Manage your account settings and preferences.');
+            break;
             default:
-                setPageTitle('Dashboard');
-                setPageSubtitle('');
+            setPageTitle('Dashboard');
+            setPageSubtitle('');
         }
-    }, [pathname]);
+    }, [pathname, user]);
+
 
     return (
         <div className="border-b bg-white sticky top-0 z-10">

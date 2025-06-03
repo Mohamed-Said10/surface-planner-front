@@ -4,6 +4,10 @@ import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import { Check, CalendarDays, DollarSign, Wallet, Star } from "lucide-react"
+import UpComingBookings from '@/components/dashboard/booking/UpComingBookings';
+import CompletedBookings from '@/components/dashboard/booking/CompletedBookings';
+
+
 
 
 
@@ -135,10 +139,6 @@ export default function HomePage() {
 
   return (
   <div className="p-4 space-y-4">
-        <BookingStatusCard />
-
-    {/* Booking Status */}
-    
 
     {/* Stats */}
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -176,82 +176,10 @@ export default function HomePage() {
     </div>
 
     {/* Recent UpComing Bookings */}
-    <h2 className="text-lg font-semibold">UpComing Bookings</h2>
-
-    <div className="bg-white rounded-lg shadow mt-4">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Booking</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer Name</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {bookings.map((booking) => (
-              <tr key={booking.id}>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.id}</td>
-                <td className="px-6 py-4">
-                  <a href="#" className="text-sm underline text-[#0D4835]">{booking.location}</a>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {new Date(booking.dateTime).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric',
-                    hour: 'numeric', minute: '2-digit', hour12: true
-                  })}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">AED {booking.price.toFixed(2)}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.package}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.customer}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <UpComingBookings />
 
     {/* Recent Completed Bookings */}
-    <h2 className="text-lg font-semibold">Completed Bookings</h2>
-
-    <div className="bg-white rounded-lg shadow mt-4">
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Booking</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date & Time</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer Name</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            {bookings.map((booking) => (
-              <tr key={booking.id}>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.id}</td>
-                <td className="px-6 py-4">
-                  <a href="#" className="text-sm underline text-[#0D4835]">{booking.location}</a>
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">
-                  {new Date(booking.dateTime).toLocaleString('en-US', {
-                    month: 'short', day: 'numeric', year: 'numeric',
-                    hour: 'numeric', minute: '2-digit', hour12: true
-                  })}
-                </td>
-                <td className="px-6 py-4 text-sm text-gray-900">AED {booking.price.toFixed(2)}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.package}</td>
-                <td className="px-6 py-4 text-sm text-gray-900">{booking.customer}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <CompletedBookings />
 
   </div>
 );

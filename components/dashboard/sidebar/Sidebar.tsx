@@ -7,9 +7,9 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 export default function Sidebar() {
+  const DASH_BASE = '/dash';
   const { data: session } = useSession();
   const pathname = usePathname();
-
   const truncateEmail = (email: string | null | undefined) => {
     if (!email) return 'user@example.com';
     if (email.length <= 25) return email;
@@ -24,6 +24,19 @@ export default function Sidebar() {
     return pathname.startsWith(path); // Partial match for other routes
   };
 
+  const user = {
+    role: 'photographer', 
+  };
+
+  const rolePath = user.role === 'photographer' ? '/photographer' : '';
+
+  // Full base path
+  const basePath = `${DASH_BASE}${rolePath}`;
+
+
+  // const isPhotographer = user.role === 'photographer';
+  // const basePath = isPhotographer ? '/dash/photographer' : '/dash';
+
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
       <div className="p-4 border-b">
@@ -35,9 +48,9 @@ export default function Sidebar() {
 
       <nav className="p-4 space-y-2">
         <a
-          href="/dash"
+          href={`${basePath}`}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive('/dash') 
+            isActive(`${basePath}`) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
@@ -45,10 +58,11 @@ export default function Sidebar() {
           <Home className="h-5 w-5 mr-3" />
           Dashboard
         </a>
+
         <a
-          href="/dash/bookings"
+          href={`${basePath}/bookings`}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive('/dash/bookings') 
+            isActive(`${basePath}/bookings`) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
@@ -56,10 +70,11 @@ export default function Sidebar() {
           <Camera className="h-5 w-5 mr-3" />
           My Bookings
         </a>
+
         <a
-          href="/dash/completed"
+          href={`${basePath}/completed`}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive('/dash/completed') 
+            isActive(`${basePath}/completed`) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
@@ -68,6 +83,7 @@ export default function Sidebar() {
           Completed Projects
         </a>
       </nav>
+
 
       <div className="absolute bottom-0 w-64 border-t">
         <div className="p-4">
@@ -98,7 +114,7 @@ export default function Sidebar() {
           </div>
           <div className="space-y-1">
             <a 
-              href="/dash/settings" 
+              href={`${basePath}/settings`}
               className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
                 isActive('/dash/settings') 
                   ? 'bg-gray-100 text-[#0F553E]' 
@@ -109,7 +125,7 @@ export default function Sidebar() {
               Settings
             </a>
             <a 
-              href="/dash/support" 
+              href={`${basePath}/support`}
               className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
                 isActive('/dash/support') 
                   ? 'bg-gray-100 text-[#0F553E]' 
