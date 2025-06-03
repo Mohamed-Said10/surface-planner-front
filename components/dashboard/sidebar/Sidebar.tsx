@@ -1,36 +1,70 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { Camera, HelpCircle, Home, LogOut, Settings, CircleDollarSign } from "lucide-react";
+import { Camera, HelpCircle, Home, Settings, CircleDollarSign } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect } from "react";
+
+type UserRole = 'client' | 'photographer' | 'admin';
+
+const ROLE_PATHS = {
+  client: {
+    base: '/dash',
+    bookings: '/dash/bookings',
+    projects: '/dash/completed'
+  },
+  photographer: {
+    base: '/dash/photographer',
+    bookings: '/dash/photographer/bookings',
+    projects: '/dash/photographer/payments'
+  },
+  admin: {
+    base: '/dash/admin',
+    bookings: '/dash/admin/bookings',
+    projects: '/dash/admin/completed'
+  }
+} as const;
+
+const getRolePaths = (role: UserRole) => {
+  if (!ROLE_PATHS[role]) {
+    throw new Error(`Invalid role: ${role}`); 
+  }
+  return ROLE_PATHS[role];
+};
 
 export default function Sidebar() {
-  const DASH_BASE = '/dash';
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const pathname = usePathname();
+  const router = useRouter();
+
+  // const userRole = (session?.user?.role as UserRole) || 'photographer';
+  const userRole = 'photographer' as UserRole;
+  const { base, bookings, projects } = getRolePaths(userRole); 
+
+  // Helper functions
   const truncateEmail = (email: string | null | undefined) => {
     if (!email) return 'user@example.com';
-    if (email.length <= 25) return email;
-    return `${email.substring(0, 22)}...`;
+    return email.length <= 25 ? email : `${email.substring(0, 22)}...`;
   };
 
-  // Helper function to determine if a link is active
-  const isActive = (path: string) => {
-    if (path === '/dash') {
-      return pathname === path; // Requires exact match for dashboard
+  const isActive = (path: string) => pathname.startsWith(path);
+
+  // 5. Path validation effect
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+
+    const validPaths = Object.values(getRolePaths(userRole));
+    const isValidPath = validPaths.some(path => pathname.startsWith(path));
+
+    if (!isValidPath) {
+      router.replace(base);
     }
-    return pathname.startsWith(path); // Partial match for other routes
-  };
 
-  const user = {
-    role: 'photographer', 
-  };
+  }, [pathname, status, userRole, router]);
 
-  const rolePath = user.role === 'photographer' ? '/photographer' : '';
-  const basePath = `${DASH_BASE}${rolePath}`;
+  if (status !== 'authenticated') return null;
 
-  const subPath = user.role === 'photographer' ? '/payments' : '/completed';
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
       <div className="p-4 border-b">
@@ -42,9 +76,9 @@ export default function Sidebar() {
 
       <nav className="p-4 space-y-2">
         <a
-          href={`${basePath}`}
+          href={base}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive(`${basePath}`) 
+            isActive(base) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
@@ -54,9 +88,9 @@ export default function Sidebar() {
         </a>
 
         <a
-          href={`${basePath}/bookings`}
+          href={bookings}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive(`${basePath}/bookings`) 
+            isActive(bookings) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
@@ -66,15 +100,15 @@ export default function Sidebar() {
         </a>
 
         <a
-          href={`${basePath}${subPath}`}
+          href={projects}
           className={`flex items-center text-sm px-4 py-2 rounded-lg ${
-            isActive(`${basePath}${subPath}`) 
+            isActive(projects) 
               ? 'bg-gray-100 text-[#0F553E]' 
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
           <CircleDollarSign className="h-5 w-5 mr-3" />
-          {user.role === 'photographer' ? 'Payments' : 'Completed Projects'}
+          {userRole === 'photographer' ? 'Payments' : 'Completed Projects'}
         </a>
       </nav>
 
