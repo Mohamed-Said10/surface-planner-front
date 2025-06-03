@@ -283,7 +283,7 @@ const BOOKING = {
             <span>upcoming</span>
           </div>
         </div>
-        <div className="dvideligne border 1px mb-3 mt-3"/>
+        <div className="dvideligne border-b mb-3 mt-3"/>
 
         <div className="grid grid-cols-3 gap-8 mb-4">
           <div>
