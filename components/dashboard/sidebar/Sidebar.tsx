@@ -33,6 +33,8 @@ const getRolePaths = (role: UserRole) => {
   return ROLE_PATHS[role];
 };
 
+const COMMON_ROUTES = ['/dash/settings', '/dash/support'];
+
 export default function Sidebar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
@@ -54,14 +56,36 @@ export default function Sidebar() {
   useEffect(() => {
     if (status !== 'authenticated') return;
 
-    const validPaths = Object.values(getRolePaths(userRole));
-    const isValidPath = validPaths.some(path => pathname.startsWith(path));
-
-    if (!isValidPath) {
-      router.replace(base);
+    // Allow common routes (settings, support, etc.)
+    if (COMMON_ROUTES.some(route => pathname.startsWith(route))) {
+      return;
     }
 
-  }, [pathname, status, userRole, router]);
+    // Admin can access all routes
+    if (userRole === 'admin') {
+      return;
+    }
+
+    // Get all allowed paths for current role
+    const { base, ...rolePaths } = ROLE_PATHS[userRole];
+    const allowedPaths = Object.values(rolePaths);
+
+    // Check if path matches base or any allowed path
+    const isAllowed = 
+      pathname === base ||
+      pathname.startsWith(`${base}/`) ||
+      allowedPaths.some(path => 
+        pathname === path || 
+        pathname.startsWith(`${path}/`)
+      );
+
+    if (!isAllowed) {
+      router.push(base);
+    }
+}, [pathname, status, userRole, router]);
+
+
+
 
   if (status !== 'authenticated') return null;
 
