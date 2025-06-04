@@ -5,21 +5,20 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-type UserRole = 'client' | 'photographer' | 'admin';
+import { UserRole } from "@/types/user";
 
 const ROLE_PATHS = {
-  client: {
-    base: '/dash',
+  CLIENT: {
+    base: '/dash/client',
     bookings: '/dash/bookings',
     projects: '/dash/completed'
   },
-  photographer: {
+  PHOTOGRAPHER: {
     base: '/dash/photographer',
     bookings: '/dash/photographer/bookings',
     projects: '/dash/photographer/payments'
   },
-  admin: {
+  ADMIN: {
     base: '/dash/admin',
     bookings: '/dash/admin/bookings',
     projects: '/dash/admin/completed'
@@ -40,8 +39,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // const userRole = (session?.user?.role as UserRole) || 'photographer';
-  const userRole = 'photographer' as UserRole;
+  // const userRole = (session?.user?.role as UserRole);
+  // console.log('sessionnnnnnnnnn:', session);
+  const userRole = 'PHOTOGRAPHER' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole); 
 
   // Helper functions
@@ -56,35 +56,36 @@ export default function Sidebar() {
   useEffect(() => {
     if (status !== 'authenticated') return;
 
-    // Allow common routes (settings, support, etc.)
+    // If path is a common route, allow access
     if (COMMON_ROUTES.some(route => pathname.startsWith(route))) {
       return;
     }
 
     // Admin can access all routes
-    if (userRole === 'admin') {
+    if (userRole === 'ADMIN') {
       return;
     }
 
-    // Get all allowed paths for current role
-    const { base, ...rolePaths } = ROLE_PATHS[userRole];
-    const allowedPaths = Object.values(rolePaths);
+    // Get all allowed paths for the current role
+    const allowedPaths = Object.values(ROLE_PATHS[userRole]);
+    
+    // Check if current path belongs to another role's namespace
+    const isOtherRolesPath = Object.entries(ROLE_PATHS)
+      .filter(([role]) => role !== userRole) // exclude current role
+      .some(([_, paths]) => {
+        const otherRoleBase = paths.base;
+        return pathname === otherRoleBase || pathname.startsWith(otherRoleBase + '/');
+      });
 
-    // Check if path matches base or any allowed path
-    const isAllowed = 
-      pathname === base ||
-      pathname.startsWith(`${base}/`) ||
-      allowedPaths.some(path => 
-        pathname === path || 
-        pathname.startsWith(`${path}/`)
-      );
+    // Check if current path is explicitly allowed
+    const isAllowed = allowedPaths.some(path => 
+      pathname === path || pathname.startsWith(path + '/')
+    );
 
-    if (!isAllowed) {
+    if (isOtherRolesPath || !isAllowed) {
       router.push(base);
     }
-}, [pathname, status, userRole, router]);
-
-
+  }, [pathname, status, userRole, router, base]);
 
 
   if (status !== 'authenticated') return null;
@@ -132,7 +133,7 @@ export default function Sidebar() {
           }`}
         >
           <CircleDollarSign className="h-5 w-5 mr-3" />
-          {userRole === 'photographer' ? 'Payments' : 'Completed Projects'}
+          {userRole === 'PHOTOGRAPHER' ? 'Payments' : 'Completed Projects'}
         </a>
       </nav>
 
