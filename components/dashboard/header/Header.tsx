@@ -13,15 +13,15 @@ export default function Header() {
     useEffect(() => {
         // Update title whenever pathname changes
         switch(pathname) {
-            case '/dash':
+            case '/dash/client':
                 setPageTitle('Dashboard');
                 setPageSubtitle("Here's the overview of your latest bookings.");
                 break;
-            case '/dash/bookings':
+            case '/dash/client/bookings':
                 setPageTitle('My Bookings');
                 setPageSubtitle('View and manage your upcoming bookings.');
                 break;
-            case '/dash/completed':
+            case '/dash/client/completed':
                 setPageTitle('Completed Projects');
                 setPageSubtitle('Browse your completed projects and media.');
                 break;
@@ -56,7 +56,7 @@ export default function Header() {
                         <p className="text-xs text-gray-500">{pageSubtitle}</p>
                     )}
                 </div>
-                {pathname !== '/booking' && (
+                {pathname.startsWith('/dash/client') && (
                     <a href="/booking">
                         <Button className="font-normal text-xs bg-[#0F553E] hover:bg-[#0F553E]/90">
                             + Book a New Session
