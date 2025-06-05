@@ -1,6 +1,6 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { Camera, HelpCircle, Home, Settings, CircleDollarSign } from "lucide-react";
+import { HelpCircle, Home, Settings, CircleDollarSign, CalendarRange, CircleCheckBig } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -39,8 +39,8 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // const userRole = (session?.user?.role as UserRole);
-  const userRole = 'CLIENT' as UserRole;
+  // const userRole = (session?.user?.role as UserRole); 
+  const userRole = 'PHOTOGRAPHER' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole); 
 
   // Helper functions
@@ -51,7 +51,6 @@ export default function Sidebar() {
 
   const isActive = (path: string) => pathname.startsWith(path);
 
-  // 5. Path validation effect
   useEffect(() => {
     if (status !== 'authenticated') return;
 
@@ -88,6 +87,8 @@ export default function Sidebar() {
 
 
   if (status !== 'authenticated') return null;
+  
+  const ProjectIcon = userRole === 'PHOTOGRAPHER' ? CircleDollarSign : CircleCheckBig;
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
@@ -119,7 +120,7 @@ export default function Sidebar() {
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
-          <Camera className="h-5 w-5 mr-3" />
+          <CalendarRange  className="h-5 w-5 mr-3" />
           My Bookings
         </a>
 
@@ -131,7 +132,7 @@ export default function Sidebar() {
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
-          <CircleDollarSign className="h-5 w-5 mr-3" />
+          <ProjectIcon className="h-5 w-5 mr-3" />
           {userRole === 'PHOTOGRAPHER' ? 'Payments' : 'Completed Projects'}
         </a>
       </nav>
