@@ -17,7 +17,7 @@ const ROLE_PATHS = {
   photographer: {
     base: '/dash/photographer',
     bookings: '/dash/photographer/bookings',
-    projects: '/dash/photographer/payments'
+    projects: '/dash/photographer/payments',
   },
   admin: {
     base: '/dash/admin',
@@ -39,7 +39,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   // const userRole = (session?.user?.role as UserRole) || 'photographer';
-  const userRole = 'photographer' as UserRole;
+  const userRole = 'client' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole); 
 
   // Helper functions
