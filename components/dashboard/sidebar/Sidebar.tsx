@@ -88,7 +88,7 @@ export default function Sidebar() {
 
   if (status !== 'authenticated') return null;
   
-  const ProjectIcon = userRole === 'PHOTOGRAPHER' ? CircleDollarSign : CircleCheckBig;
+  // const ProjectIcon = userRole === 'PHOTOGRAPHER' ? CircleDollarSign : CircleCheckBig;
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
@@ -132,9 +132,19 @@ export default function Sidebar() {
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
-          <ProjectIcon className="h-5 w-5 mr-3" />
-          {userRole === 'PHOTOGRAPHER' ? 'Payments' : 'Completed Projects'}
+          {userRole === 'PHOTOGRAPHER' ? (
+            <>
+              <CircleDollarSign className="h-5 w-5 mr-3" />
+              Payments
+            </>
+          ) : (
+            <>
+              <CircleCheckBig className="h-5 w-5 mr-3" />
+              Completed Projects
+            </>
+          )}
         </a>
+        
       </nav>
 
 
