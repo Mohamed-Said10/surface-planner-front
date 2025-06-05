@@ -1,8 +1,8 @@
 "use client";
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, CalendarDays, DollarSign, Wallet, Star } from "lucide-react"
 import BookingsTable from '@/components/shared/bookingsTable';
+import { DollarSign, DollarCircle, CalendarDays, Star} from '@/components/icons';
 
 const bookingStatus = {
   id: "1279486",
@@ -174,7 +174,9 @@ export default function HomePage() {
     {/* Stats */}
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <CalendarDays className="text-green-600" size={20} />
+        <div className="p-3 border border-gray-200 rounded-md">
+          <CalendarDays color="#0D824B" size={25} />
+        </div>
         <div>
           <div className="text-xs text-gray-500">Active Bookings</div>
           <div className="text-xl font-semibold">{stats.activeBookings}</div>
@@ -182,7 +184,9 @@ export default function HomePage() {
       </div>
       
       <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <DollarSign className="text-gray-600" size={20} />
+        <div className="p-3 border border-gray-300 rounded-md">
+          <DollarCircle color="#515662" size={25} />
+        </div>
         <div>
           <div className="text-xs text-gray-500">Total Earnings</div>
           <div className="text-xl font-semibold">AED {stats.totalEarnings}</div>
@@ -190,7 +194,9 @@ export default function HomePage() {
       </div>
 
       <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <Wallet className="text-red-600" size={20} />
+        <div className="p-3 border border-gray-200 rounded-md">
+          <DollarSign color="#CC3A30" size={25} />
+        </div>
         <div>
           <div className="text-xs text-gray-500">Pending Payouts</div>
           <div className="text-xl font-semibold">AED {stats.pendingPayouts}</div>
@@ -198,7 +204,9 @@ export default function HomePage() {
       </div>
 
       <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <Star className="text-yellow-500" size={20} />
+        <div className="p-3 border border-gray-200 rounded-md">
+          <Star size={25} />
+        </div>
         <div>
           <div className="text-xs text-gray-500">Average Ratings</div>
           <div className="text-xl font-semibold">{stats.averageRating}</div>

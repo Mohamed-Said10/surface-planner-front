@@ -1,11 +1,12 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { HelpCircle, Home, Settings, CircleDollarSign, CalendarRange, CircleCheckBig } from "lucide-react";
+import { CircleCheckBig, HelpCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { UserRole } from "@/types/user";
+import { DollarCircle, CalendarDays, Home, Settings } from '@/components/icons';
 
 const ROLE_PATHS = {
   CLIENT: {
@@ -87,8 +88,6 @@ export default function Sidebar() {
 
 
   if (status !== 'authenticated') return null;
-  
-  // const ProjectIcon = userRole === 'PHOTOGRAPHER' ? CircleDollarSign : CircleCheckBig;
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
@@ -120,7 +119,7 @@ export default function Sidebar() {
               : 'text-[#646973] hover:bg-gray-100'
           }`}
         >
-          <CalendarRange  className="h-5 w-5 mr-3" />
+          <CalendarDays  className="h-5 w-5 mr-3" />
           My Bookings
         </a>
 
@@ -134,7 +133,7 @@ export default function Sidebar() {
         >
           {userRole === 'PHOTOGRAPHER' ? (
             <>
-              <CircleDollarSign className="h-5 w-5 mr-3" />
+              <DollarCircle size={24} color="#000" className="h-5 w-5 mr-3"/>
               Payments
             </>
           ) : (
