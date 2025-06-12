@@ -1,25 +1,25 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { Camera, HelpCircle, Home, Settings, CircleDollarSign } from "lucide-react";
+import { HelpCircle, Home, Settings, CircleDollarSign, CalendarRange, CircleCheckBig } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-type UserRole = 'client' | 'photographer' | 'admin';
+import { UserRole } from "@/types/user";
+import { cn } from "@/lib/utils"; // or import clsx from 'clsx';
 
 const ROLE_PATHS = {
-  client: {
-    base: '/dash',
-    bookings: '/dash/bookings',
-    projects: '/dash/completed'
+  CLIENT: {
+    base: '/dash/client',
+    bookings: '/dash/client/bookings',
+    projects: '/dash/client/completed'
   },
-  photographer: {
+  PHOTOGRAPHER: {
     base: '/dash/photographer',
     bookings: '/dash/photographer/bookings',
     projects: '/dash/photographer/payments',
   },
-  admin: {
+  ADMIN: {
     base: '/dash/admin',
     bookings: '/dash/admin/bookings',
     projects: '/dash/admin/completed'
@@ -33,13 +33,15 @@ const getRolePaths = (role: UserRole) => {
   return ROLE_PATHS[role];
 };
 
+const COMMON_ROUTES = ['/dash/settings', '/dash/support'];
+
 export default function Sidebar() {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   const router = useRouter();
 
-  // const userRole = (session?.user?.role as UserRole) || 'photographer';
-  const userRole = 'client' as UserRole;
+  // const userRole = (session?.user?.role as UserRole); 
+  const userRole = 'PHOTOGRAPHER' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole); 
 
   // Helper functions
@@ -48,20 +50,52 @@ export default function Sidebar() {
     return email.length <= 25 ? email : `${email.substring(0, 22)}...`;
   };
 
-  const isActive = (path: string) => pathname.startsWith(path);
+  const isActive = (path: string) => {
+    // Exact match for base dashboard route
+    if (path === base) {
+      return pathname === base;
+    }
+    // For other routes, use startsWith
+    return pathname.startsWith(path);
+  };
 
-  // 5. Path validation effect
+  const handleNavigation = (path: string) => {
+    router.push(path);
+  };
+
   useEffect(() => {
     if (status !== 'authenticated') return;
 
-    const validPaths = Object.values(getRolePaths(userRole));
-    const isValidPath = validPaths.some(path => pathname.startsWith(path));
-
-    if (!isValidPath) {
-      router.replace(base);
+    // If path is a common route, allow access
+    if (COMMON_ROUTES.some(route => pathname.startsWith(route))) {
+      return;
     }
 
-  }, [pathname, status, userRole, router]);
+    // Admin can access all routes
+    if (userRole === 'ADMIN') {
+      return;
+    }
+
+    // Get all allowed paths for the current role
+    const allowedPaths = Object.values(ROLE_PATHS[userRole]);
+    
+    // Check if current path belongs to another role's namespace
+    const isOtherRolesPath = Object.entries(ROLE_PATHS)
+      .filter(([role]) => role !== userRole) // exclude current role
+      .some(([_, paths]) => {
+        const otherRoleBase = paths.base;
+        return pathname === otherRoleBase || pathname.startsWith(otherRoleBase + '/');
+      });
+
+    // Check if current path is explicitly allowed
+    const isAllowed = allowedPaths.some(path => 
+      pathname === path || pathname.startsWith(path + '/')
+    );
+
+    if (isOtherRolesPath || !isAllowed) {
+      router.push(base);
+    }
+  }, [pathname, status, userRole, router, base]);
 
   if (status !== 'authenticated') return null;
 
@@ -75,43 +109,54 @@ export default function Sidebar() {
       </div>
 
       <nav className="p-4 space-y-2">
-        <a
-          href={base}
-          className={`flex items-center text-sm px-4 py-2 rounded-lg ${
+        <button
+          onClick={() => handleNavigation(base)}
+          className={cn(
+            "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
             isActive(base) 
-              ? 'bg-gray-100 text-[#0F553E]' 
-              : 'text-[#646973] hover:bg-gray-100'
-          }`}
+              ? "bg-gray-100 text-[#0F553E]" 
+              : "text-[#646973] hover:bg-gray-100"
+          )}
         >
           <Home className="h-5 w-5 mr-3" />
           Dashboard
-        </a>
+        </button>
 
-        <a
-          href={bookings}
-          className={`flex items-center text-sm px-4 py-2 rounded-lg ${
+        <button
+          onClick={() => handleNavigation(bookings)}
+          className={cn(
+            "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
             isActive(bookings) 
-              ? 'bg-gray-100 text-[#0F553E]' 
-              : 'text-[#646973] hover:bg-gray-100'
-          }`}
+              ? "bg-gray-100 text-[#0F553E]" 
+              : "text-[#646973] hover:bg-gray-100"
+          )}
         >
-          <Camera className="h-5 w-5 mr-3" />
+          <CalendarRange className="h-5 w-5 mr-3" />
           My Bookings
-        </a>
+        </button>
 
-        <a
-          href={projects}
-          className={`flex items-center text-sm px-4 py-2 rounded-lg ${
+        <button
+          onClick={() => handleNavigation(projects)}
+          className={cn(
+            "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
             isActive(projects) 
-              ? 'bg-gray-100 text-[#0F553E]' 
-              : 'text-[#646973] hover:bg-gray-100'
-          }`}
+              ? "bg-gray-100 text-[#0F553E]" 
+              : "text-[#646973] hover:bg-gray-100"
+          )}
         >
-          <CircleDollarSign className="h-5 w-5 mr-3" />
-          {userRole === 'photographer' ? 'Payments' : 'Completed Projects'}
-        </a>
+          {userRole === 'PHOTOGRAPHER' ? (
+            <>
+              <CircleDollarSign className="h-5 w-5 mr-3" />
+              Payments
+            </>
+          ) : (
+            <>
+              <CircleCheckBig className="h-5 w-5 mr-3" />
+              Completed Projects
+            </>
+          )}
+        </button>
       </nav>
-
 
       <div className="absolute bottom-0 w-64 border-t">
         <div className="p-4">
@@ -141,28 +186,30 @@ export default function Sidebar() {
             </div>
           </div>
           <div className="space-y-1">
-            <a 
-              href='/dash/settings'
-              className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
+            <button 
+              onClick={() => handleNavigation('/dash/settings')}
+              className={cn(
+                "w-full text-sm flex items-center px-4 py-2 text-left rounded-lg transition-colors",
                 isActive('/dash/settings') 
-                  ? 'bg-gray-100 text-[#0F553E]' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                  ? "bg-gray-100 text-[#0F553E]" 
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
             >
               <Settings className="h-4 w-4 mr-3" />
               Settings
-            </a>
-            <a 
-              href='/dash/support'
-              className={`w-full text-sm flex items-center px-4 py-2 text-left rounded-lg ${
+            </button>
+            <button 
+              onClick={() => handleNavigation('/dash/support')}
+              className={cn(
+                "w-full text-sm flex items-center px-4 py-2 text-left rounded-lg transition-colors",
                 isActive('/dash/support') 
-                  ? 'bg-gray-100 text-[#0F553E]' 
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
+                  ? "bg-gray-100 text-[#0F553E]" 
+                  : "text-gray-600 hover:bg-gray-100"
+              )}
             >
               <HelpCircle className="h-4 w-4 mr-3" />
               Help & Support
-            </a>
+            </button>
             <LogoutButton/>
           </div>
         </div>

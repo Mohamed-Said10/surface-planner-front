@@ -6,98 +6,100 @@ import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
 import BookingsTable from '@/components/shared/bookingsTable';
 
-interface Booking {
+export interface Booking {
   id: string;
+  createdAt: string;
+  updatedAt: string;
+  clientId: string;
+  photographerId: string | null;
+  status: "BOOKING_CREATED" |"PHOTOGRAPHER_ASSIGNED"| "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED";
+  packageId: number;
+  propertyType: string;
+  propertySize: string;
   buildingName: string;
+  unitNumber: string;
+  floor: string;
   street: string;
+  villaNumber: string | null;
+  company: string | null;
   appointmentDate: string;
+  timeSlot: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  additionalDirections: string | null;
+  additionalRequests: string | null;
+  additionalInfo: string | null;
+  isPaid: boolean;
+
+  // relations
   package: {
+    id: number;
     name: string;
     price: number;
+    description: string;
+    features: string[];
+    pricePerExtra: number;
   };
-  addOns: Array<{
+
+  addOns: {
+    id: string;
     name: string;
     price: number;
-  }>;
-  photographer: {
+    addonId: string;
+    bookingId: string;
+  }[];
+
+  client: {
+    id: string;
+    email: string;
     firstname: string;
     lastname: string;
+  };
+
+  photographer: {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email?: string;
   } | null;
-  status: string;
 }
-
-const upcomingBookings = [
-  {
-    id: 1,
-    location: "Dubai Marina",
-    dateTime: new Date().toISOString(),
-    price: 120.5,
-    package: "Premium",
-    customer: "John Doe",
-  },
-  {
-    id: 2,
-    location: "Burj Khalifa",
-    dateTime: new Date().toISOString(),
-    price: 99.9,
-    package: "Standard",
-    customer: "Alice Smith",
-  },
-];
-
-const completedBookings = [
-  {
-    id: 3,
-    location: "Desert Safari",
-    dateTime: new Date().toISOString(),
-    price: 150.0,
-    package: "Adventure",
-    customer: "David Lee",
-  },
-  {
-    id: 4,
-    location: "Atlantis The Palm",
-    dateTime: new Date().toISOString(),
-    price: 199.5,
-    package: "Luxury",
-    customer: "Emma Johnson",
-  },
-];
 
 export default function BookingsPage() {
   const { data: session, status } = useSession();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
+console.log(bookings,' bookings');
   const requestInProgress = useRef(false);
 
   const fetchBookings = async () => {
-    
-    if (requestInProgress.current) return; // Skip if already fetching
+    if (requestInProgress.current) return;
     requestInProgress.current = true;
 
     try {
       setLoading(true);
       setError(null);
-      
+
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         }
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch bookings');
       }
-      
+
       const data = await response.json();
       setBookings(data.bookings);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load bookings');
     } finally {
       setLoading(false);
+      requestInProgress.current = false;
     }
   };
 
@@ -106,6 +108,9 @@ export default function BookingsPage() {
       fetchBookings();
     }
   }, [status]);
+
+  const upcomingBookings = bookings.filter(booking => booking.status !== "COMPLETED");
+const completedBookings = bookings.filter(booking => booking.status === "COMPLETED");
 
 
   if (loading) {

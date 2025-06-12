@@ -4,58 +4,70 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Check, CalendarDays, DollarSign, Wallet, Star } from "lucide-react"
 import BookingsTable from '@/components/shared/bookingsTable';
 
-const bookingStatus = {
-  id: "1279486",
-  steps: [
-    { label: "Booking Requested", date: "May 5, 5:54 AM", completed: true },
-    { label: "Photographer Assigned", date: "May 5, 8:54 AM", completed: true },
-    { label: "Shoot in Progress", date: "May 5, 8:54 AM", completed: true },
-    { label: "Editing", date: "Currently", completed: false, inProgress: true },
-    { label: "Order Delivery", date: "Expected May 8, 2025", completed: false }
-  ]
-};
+// Import the Booking interface from your BookingsPage component
+export interface Booking {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  clientId: string;
+  photographerId: string | null;
+  status: "BOOKING_CREATED" |"PHOTOGRAPHER_ASSIGNED"| "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED";
+  packageId: number;
+  propertyType: string;
+  propertySize: string;
+  buildingName: string;
+  unitNumber: string;
+  floor: string;
+  street: string;
+  villaNumber: string | null;
+  company: string | null;
+  appointmentDate: string;
+  timeSlot: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+  email: string;
+  additionalDirections: string | null;
+  additionalRequests: string | null;
+  additionalInfo: string | null;
+  isPaid: boolean;
 
-const upcomingBookings = [
-  {
-    id: 1,
-    location: "Dubai Marina",
-    dateTime: new Date().toISOString(),
-    price: 120.5,
-    package: "Premium",
-    customer: "John Doe",
-  },
-  {
-    id: 2,
-    location: "Burj Khalifa",
-    dateTime: new Date().toISOString(),
-    price: 99.9,
-    package: "Standard",
-    customer: "Alice Smith",
-  },
-];
+  // relations
+  package: {
+    id: number;
+    name: string;
+    price: number;
+    description: string;
+    features: string[];
+    pricePerExtra: number;
+  };
 
-const completedBookings = [
-  {
-    id: 3,
-    location: "Desert Safari",
-    dateTime: new Date().toISOString(),
-    price: 150.0,
-    package: "Adventure",
-    customer: "David Lee",
-  },
-  {
-    id: 4,
-    location: "Atlantis The Palm",
-    dateTime: new Date().toISOString(),
-    price: 199.5,
-    package: "Luxury",
-    customer: "Emma Johnson",
-  },
-];
+  addOns: {
+    id: string;
+    name: string;
+    price: number;
+    addonId: string;
+    bookingId: string;
+  }[];
+
+  client: {
+    id: string;
+    email: string;
+    firstname: string;
+    lastname: string;
+  };
+
+  photographer: {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email?: string;
+  } | null;
+}
 
 export default function HomePage() {
   const { data: session, status } = useSession();
-  const [bookings, setBookings] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState({
@@ -65,10 +77,10 @@ export default function HomePage() {
     averageRating: 0
   });
 
-  const requestInProgress = useRef(false); // Track ongoing requests
+  const requestInProgress = useRef(false);
 
   const fetchBookings = useCallback(async () => {
-    if (requestInProgress.current) return; // Skip if already fetching
+    if (requestInProgress.current) return;
     requestInProgress.current = true;
     
     try {
@@ -99,16 +111,37 @@ export default function HomePage() {
         setError(null);
         
         const data = await fetchBookings();
-        if (!data) return; // Skip if request was aborted
+        if (!data) return;
         
         setBookings(data.bookings);
+        
+        // Calculate dynamic stats
+        const activeBookings = data.bookings.filter(
+          (booking: Booking) => !['COMPLETED', 'CANCELLED'].includes(booking.status)
+        );
+        
+        const completedBookings = data.bookings.filter(
+          (booking: Booking) => booking.status === 'COMPLETED'
+        );
+        
+        const totalEarnings = completedBookings.reduce((sum: number, booking: Booking) => {
+          const packagePrice = booking.package?.price || 0;
+          const addOnsPrice = booking.addOns?.reduce((addOnSum, addOn) => addOnSum + addOn.price, 0) || 0;
+          return sum + packagePrice + addOnsPrice;
+        }, 0);
+        
+        const pendingPayouts = activeBookings.reduce((sum: number, booking: Booking) => {
+          if (booking.isPaid) return sum;
+          const packagePrice = booking.package?.price || 0;
+          const addOnsPrice = booking.addOns?.reduce((addOnSum, addOn) => addOnSum + addOn.price, 0) || 0;
+          return sum + packagePrice + addOnsPrice;
+        }, 0);
+        
         setStats({
-          averageRating: data.pagination.total,
-          pendingPayouts: data.pagination.total,
-          totalEarnings: data.pagination.total,
-          activeBookings: data.bookings.filter(
-            (b: any) => !['COMPLETED', 'CANCELLED'].includes(b.status)
-          ).length
+          activeBookings: activeBookings.length,
+          totalEarnings: totalEarnings,
+          pendingPayouts: pendingPayouts,
+          averageRating: 4.8 // You can calculate this from actual ratings when available
         });
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load bookings');
@@ -120,6 +153,9 @@ export default function HomePage() {
     loadBookings();
   }, [status, session, fetchBookings]);
 
+  // Filter bookings dynamically
+  const upcomingBookings = bookings.filter(booking => booking.status !== "COMPLETED");
+  const completedBookings = bookings.filter(booking => booking.status === "COMPLETED");
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
@@ -169,49 +205,47 @@ export default function HomePage() {
   }
 
   return (
-  <div className="p-4 space-y-4">
+    <div className="p-4 space-y-4">
+      {/* Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <CalendarDays className="text-green-600" size={20} />
+          <div>
+            <div className="text-xs text-gray-500">Active Bookings</div>
+            <div className="text-xl font-semibold">{stats.activeBookings}</div>
+          </div>
+        </div>
+        
+        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <DollarSign className="text-gray-600" size={20} />
+          <div>
+            <div className="text-xs text-gray-500">Total Earnings</div>
+            <div className="text-xl font-semibold">AED {stats.totalEarnings.toFixed(2)}</div>
+          </div>
+        </div>
 
-    {/* Stats */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <CalendarDays className="text-green-600" size={20} />
-        <div>
-          <div className="text-xs text-gray-500">Active Bookings</div>
-          <div className="text-xl font-semibold">{stats.activeBookings}</div>
+        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <Wallet className="text-red-600" size={20} />
+          <div>
+            <div className="text-xs text-gray-500">Pending Payouts</div>
+            <div className="text-xl font-semibold">AED {stats.pendingPayouts.toFixed(2)}</div>
+          </div>
         </div>
-      </div>
-      
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <DollarSign className="text-gray-600" size={20} />
-        <div>
-          <div className="text-xs text-gray-500">Total Earnings</div>
-          <div className="text-xl font-semibold">AED {stats.totalEarnings}</div>
+
+        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+          <Star className="text-yellow-500" size={20} />
+          <div>
+            <div className="text-xs text-gray-500">Average Ratings</div>
+            <div className="text-xl font-semibold">{stats.averageRating}</div>
+          </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <Wallet className="text-red-600" size={20} />
-        <div>
-          <div className="text-xs text-gray-500">Pending Payouts</div>
-          <div className="text-xl font-semibold">AED {stats.pendingPayouts}</div>
-        </div>
-      </div>
+      {/* Upcoming Bookings */}
+      <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
 
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <Star className="text-yellow-500" size={20} />
-        <div>
-          <div className="text-xs text-gray-500">Average Ratings</div>
-          <div className="text-xl font-semibold">{stats.averageRating}</div>
-        </div>
-      </div>
+      {/* Completed Bookings */}
+      <BookingsTable title="Completed Bookings" bookings={completedBookings} />
     </div>
-
-    {/* Upcoming Bookings */}
-    <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
-
-    {/* Completed Bookings */}
-    <BookingsTable title="Completed Bookings" bookings={completedBookings} />
-
-  </div>
-);
+  );
 }
