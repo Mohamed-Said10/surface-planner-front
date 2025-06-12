@@ -209,43 +209,43 @@ export default function HomePage() {
 
     {/* Stats */}
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <div className="p-3 border border-gray-200 rounded-md">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
+        <div className="p-3 border border-[#DBDCDF] rounded-md">
           <CalendarDays color="#0D824B" size={25} />
         </div>
         <div>
-          <div className="text-xs text-gray-500">Active Bookings</div>
-          <div className="text-xl font-semibold">{stats.activeBookings}</div>
+          <div className="text-xs text-[#515662]">Active Bookings</div>
+          <div className="text-xl text-[#101828] font-semibold">{stats.activeBookings}</div>
         </div>
       </div>
       
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <div className="p-3 border border-gray-300 rounded-md">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
+        <div className="p-3 border border-[#DBDCDF] rounded-md">
           <DollarCircle color="#515662" size={25} />
         </div>
         <div>
-          <div className="text-xs text-gray-500">Total Earnings</div>
-          <div className="text-xl font-semibold">AED {stats.totalEarnings}</div>
+          <div className="text-xs text-[#515662]">Total Earnings</div>
+          <div className="text-xl text-[#101828] font-semibold">AED {stats.totalEarnings}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <div className="p-3 border border-gray-200 rounded-md">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3"> 
+        <div className="p-3 border border-[#DBDCDF] rounded-md">
           <DollarSign color="#CC3A30" size={25} />
         </div>
         <div>
-          <div className="text-xs text-gray-500">Pending Payouts</div>
-          <div className="text-xl font-semibold">AED {stats.pendingPayouts}</div>
+          <div className="text-xs text-[#515662]">Pending Payouts</div>
+          <div className="text-xl text-[#101828] font-semibold">AED {stats.pendingPayouts}</div>
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-        <div className="p-3 border border-gray-200 rounded-md">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
+        <div className="p-3 border border-[#DBDCDF] rounded-md">
           <Star size={25} />
         </div>
         <div>
-          <div className="text-xs text-gray-500">Average Ratings</div>
-          <div className="text-xl font-semibold">{stats.averageRating}</div>
+          <div className="text-xs text-[#515662]">Average Ratings</div>
+          <div className="text-xl text-[#101828] font-semibold">{stats.averageRating}</div>
         </div>
       </div>
     </div>

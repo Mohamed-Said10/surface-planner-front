@@ -8,12 +8,14 @@ import { useEffect } from "react";
 import { UserRole } from "@/types/user";
 import { cn } from "@/lib/utils"; // or import clsx from 'clsx';
 import { DollarCircle, CalendarDays, Home, Settings } from '@/components/icons';
+import { DashIcon } from "@radix-ui/react-icons";
 
 const ROLE_PATHS = {
   CLIENT: {
     base: '/dash/client',
     bookings: '/dash/client/bookings',
-    projects: '/dash/client/completed'
+    projects: '/dash/client/completed',
+    
   },
   PHOTOGRAPHER: {
     base: '/dash/photographer',
@@ -42,7 +44,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   // const userRole = (session?.user?.role as UserRole); 
-  const userRole = 'PHOTOGRAPHER' as UserRole;
+  const userRole = 'CLIENT' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole); 
 
   // Helper functions
