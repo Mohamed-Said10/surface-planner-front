@@ -6,8 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { UserRole } from "@/components/types/user";
-import { UserRole } from "@/types/user";
-import { cn } from "@/lib/utils"; // or import clsx from 'clsx';
+import { cn } from "@/lib/utils"; 
 import { DollarCircle, CalendarDays, Home, Settings } from '@/components/icons';
 import { DashIcon } from "@radix-ui/react-icons";
 
@@ -15,9 +14,7 @@ const ROLE_PATHS = {
   CLIENT: {
     base: '/dash/client',
     bookings: '/dash/client/bookings',
-    projects: '/dash/client/completed',
-    projects: '/dash/client/completed',
-    
+    projects: '/dash/client/completed'    
   },
   PHOTOGRAPHER: {
     base: '/dash/photographer',
