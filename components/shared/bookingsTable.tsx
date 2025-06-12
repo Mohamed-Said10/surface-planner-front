@@ -18,11 +18,11 @@ interface BookingsTableProps {
 const bookingsTable: React.FC<BookingsTableProps> = ({ title, bookings }) => (
   <div>
     <h2 className="text-lg font-semibold">{title}</h2>
-    <div className="bg-white rounded-lg shadow mt-4">
+    <div className="bg-white rounded-lg mt-4">
       <div className="overflow-x-auto border border-gray-200 rounded-lg">
         <table className="w-full">
           <thead>
-            <tr className="text-left bg-gray-100">
+            <tr className="text-left bg-[#F5F6F6]">
               <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">ID</th>
               <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Booking</th>
               <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Date & Time</th>

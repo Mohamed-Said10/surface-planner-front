@@ -1,6 +1,7 @@
 "use client";
-import React from "react";
+import React, { useState }from "react";
 import { AverageCoins, XCircle, DollarSign, Download} from '@/components/icons';
+import WithdrawEarningsModal from '@/components/modals/WithdrawEarningsModal';
 
 
 interface Transaction {
@@ -59,6 +60,19 @@ const recentTransactions: Transaction[] = [
 ];
 
 export default function PaymentsPage() {
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+
+    const handleViewInvoice = (transaction: Transaction) => {
+        setSelectedTransaction(transaction);
+        setIsModalOpen(true);
+    };
+
+    const closeModal = () => {
+        setIsModalOpen(false);
+        setSelectedTransaction(null);
+    };
   
   return (
     <div className="p-6">
@@ -67,68 +81,68 @@ export default function PaymentsPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {/* Total Earnings Card */}
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <div className="p-3 border border-gray-300 rounded-md">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+            <div className="p-3 border border-[#DBDCDF] rounded-md">
                 <DollarSign size={25} />
             </div>
             <div>
-                <div className="text-xs text-gray-500">Total Earnings</div>
-                <div className="text-xl font-semibold">AED 57,000</div>
+                <div className="text-xs text-[#515662]">Total Earnings</div>
+                <div className="text-xl font-semibold text-[#101828]">AED 57,000</div>
             </div>
         </div>
 
         {/* Average Earning per Booking Card */}
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <div className="p-3 border border-gray-200 rounded-md">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+            <div className="p-3 border border-[#DBDCDF] rounded-md">
                 <AverageCoins size={25} />
             </div>
             <div>
-                <div className="text-xs text-gray-500">Avg. Earning per Booking</div>
-                <div className="text-xl font-semibold">AED 127.5</div>
+                <div className="text-xs text-[#515662]">Avg. Earning per Booking</div>
+                <div className="text-xl font-semibold text-[#101828]">AED 127.5</div>
             </div>
         </div>
 
         {/* Failed Transactions Card */}
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <div className="p-3 border border-gray-200 rounded-md">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+            <div className="p-3 border border-[#DBDCDF] rounded-md">
                 <XCircle size={25} />
             </div>
             <div>
-                <div className="text-xs text-gray-500">Failed Transactions</div>
-                <div className="text-xl font-semibold">AED 4,000</div>
+                <div className="text-xs text-[#515662]">Failed Transactions</div>
+                <div className="text-xl font-semibold text-[#101828]">AED 4,000</div>
             </div>
         </div>
       </div>
 
       {/* Recent Transactions */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+      <div className="bg-white border border-[#DBDCDF] rounded-lg p-6">
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-[#DBDCDF]">
             <h2 className="text-xl font-bold">Recent Transactions</h2>
-            <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md px-3 py-1.5">
+            <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 border border-[#DBDCDF] rounded-md px-3 py-1.5">
             <Download size={15} />
             Download Reports
             </button>
         </div>
-        <div className="overflow-x-auto border border-gray-300 rounded-lg">
+        <div className="overflow-x-auto border border-[#DBDCDF] rounded-lg">
             <table className="w-full">
-            <thead>
-                <tr className="text-left bg-gray-50">
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Invoice ID</th>
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Customer Name</th>
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Booking Details</th>
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Amount Paid</th>
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-r border-gray-200">Status</th>
-                <th className="p-4 text-sm font-medium text-gray-500 border-b border-gray-200">Actions</th>
+            <thead className="text-[#343B48] ">
+                <tr className="text-left bg-[#F5F6F6]">
+                <th className="p-4 text-sm font-medium border-b border-r border-[#DBDCDF]">Invoice ID</th>
+                <th className="p-4 text-sm font-medium border-b border-r border-[#DBDCDF]">Customer Name</th>
+                <th className="p-4 text-sm font-medium border-b border-r border-[#DBDCDF]">Booking Details</th>
+                <th className="p-4 text-sm font-medium border-b border-r border-[#DBDCDF]">Amount Paid</th>
+                <th className="p-4 text-sm font-medium border-b border-r border-[#DBDCDF]">Status</th>
+                <th className="p-4 text-sm font-medium border-b border-[#DBDCDF]">Actions</th>
                 </tr>
             </thead>
-            <tbody>
+            <tbody className="text-[#515662]">
                 {recentTransactions.map((transaction, index) => (
-                <tr key={index} className={index !== recentTransactions.length - 1 ? "border-b border-gray-200" : ""}>
-                    <td className="p-4 text-sm border-r border-gray-200">{transaction.invoiceId}</td>
-                    <td className="p-4 text-sm border-r border-gray-200">{transaction.customerName}</td>
-                    <td className="p-4 text-sm border-r border-gray-200">{transaction.bookingDetails}</td>
-                    <td className="p-4 text-sm border-r border-gray-200">{transaction.amountPaid}</td>
-                    <td className="p-4 text-sm border-r border-gray-200">
+                <tr key={index} className={index !== recentTransactions.length - 1 ? "border-b border-[#DBDCDF]" : ""}>
+                    <td className="p-4 text-sm border-r border-[#DBDCDF]">{transaction.invoiceId}</td>
+                    <td className="p-4 text-sm border-r border-[#DBDCDF]">{transaction.customerName}</td>
+                    <td className="p-4 text-sm border-r border-[#DBDCDF]">{transaction.bookingDetails}</td>
+                    <td className="p-4 text-sm border-r border-[#DBDCDF]">{transaction.amountPaid}</td>
+                    <td className="p-4 text-sm border-r border-[#DBDCDF]">
                     <span className={`px-2 py-1 rounded-full text-xs ${
                         transaction.status === "Completed" 
                         ? "bg-green-100 text-green-800" 
@@ -138,7 +152,10 @@ export default function PaymentsPage() {
                     </span>
                     </td>
                     <td className="p-4 text-sm">
-                    <button className="text-blue-600 hover:underline">View Invoice</button>
+                    <button 
+                      onClick={() => handleViewInvoice(transaction)}
+                      className="text-[#101828] underline">View Invoice
+                    </button>
                     </td>
                 </tr>
                 ))}
@@ -146,6 +163,17 @@ export default function PaymentsPage() {
             </table>
         </div>
       </div>
+
+      {/* Withdraw Modal */}
+      {isModalOpen && (
+            <WithdrawEarningsModal 
+                isOpen={isModalOpen}
+                onClose={closeModal}
+                transaction={selectedTransaction}
+            />
+        )}
     </div>
+    
   );
+  
 }
