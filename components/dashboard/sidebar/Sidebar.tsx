@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { UserRole } from "@/components/types/user";
 import { UserRole } from "@/types/user";
 import { cn } from "@/lib/utils"; // or import clsx from 'clsx';
 import { DollarCircle, CalendarDays, Home, Settings } from '@/components/icons';
@@ -14,6 +15,7 @@ const ROLE_PATHS = {
   CLIENT: {
     base: '/dash/client',
     bookings: '/dash/client/bookings',
+    projects: '/dash/client/completed',
     projects: '/dash/client/completed',
     
   },

@@ -1,6 +1,6 @@
 // lib/auth.ts
 import { AuthOptions } from "next-auth"
-import { UserRole } from "@/types/user";
+import { UserRole } from "@/components/types/user";
 
 export const authOptions: AuthOptions = {
   providers: [
