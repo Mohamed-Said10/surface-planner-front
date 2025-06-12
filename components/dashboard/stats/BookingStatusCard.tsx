@@ -1,24 +1,7 @@
 "use client";
 import { Check } from "lucide-react";
 import Router from "next/router";
-import React, { useEffect, useRef, useState } from "react";
-
-interface StatusHistory {
-  id: string;
-  bookingId: string;
-  userId: string;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    firstname: string;
-    lastname: string;
-    email: string;
-    role: string;
-  };
-}
+import React from "react";
 
 interface BookingStatus {
   id: string;
@@ -30,166 +13,21 @@ interface BookingStatus {
   }[];
 }
 
-const BookingStatusCard = () => {
-  const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const requestMade = useRef(false); // Tracks if request has been made
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const ignoreResponse = useRef(false); // Add this ref
+interface BookingStatusCardProps {
+  bookingStatus: BookingStatus | null;
+  loading: boolean;
+  error: string | null;
+  onRetry?: () => void;
+}
 
-  useEffect(() => {
-    // Create new controller for each request
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-    ignoreResponse.current = false; // Reset ignore flag
+const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
+  bookingStatus,
+  loading,
+  error,
+  onRetry
+}) => {
+  console.log("BookingStatusCard props:", { loading, error, bookingStatus });
 
-    const fetchStatusHistory = async () => {
-      try {
-        console.log("Starting fetch request");
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
-          {
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            signal
-          }
-        );
-
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch status");
-        }
-
-        const data = await response.json();
-        
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (!data?.bookingId) {
-          throw new Error("No booking data available");
-        }
-
-        const transformedData = transformStatusHistory(data);
-        setBookingStatus(transformedData);
-      } catch (err) {
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (err instanceof Error) {
-          if (err.name !== 'AbortError') {
-            setError(err.message);
-          }
-        }
-      } finally {
-        if (!ignoreResponse.current) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchStatusHistory();
-
-    return () => {
-      // Mark that we should ignore the response
-      ignoreResponse.current = true;
-      // Abort any ongoing request
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-
-
-  const transformStatusHistory = (apiData: {
-    bookingId: string;
-    statusHistory: StatusHistory[];
-  }): BookingStatus => {
-    // Map API status to your display labels
-    const statusMap: Record<string, string> = {
-      BOOKING_CREATED: "Booking Requested",
-      PHOTOGRAPHER_ASSIGNED: "Photographer Assigned",
-      SHOOTING: "Shoot in Progress",
-      EDITING: "Editing",
-      COMPLETED: "Order Delivery",
-    };
-
-    // Get all possible statuses in order
-    const allStatuses = [
-      "BOOKING_CREATED",
-      "PHOTOGRAPHER_ASSIGNED",
-      "SHOOTING",
-      "EDITING",
-      "COMPLETED",
-    ];
-    // Sort the status history by creation date (newest first)
-    const sortedHistory = [...apiData.statusHistory].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    // Find the current status
-    const currentStatus = sortedHistory[0]?.status || ""; // Most recent status
-    const currentIndex = allStatuses.indexOf(currentStatus);
-
-    // Next step is the one after the current status
-    const nextStepIndex = currentIndex + 1;
-
-    // Create steps array
-    const steps = allStatuses.map((status, index) => {
-      const historyItem = sortedHistory.find((item) => item.status === status);
-
-      // A step is completed if it's the current status or any previous step
-      const isCompleted = index <= currentIndex;
-
-      // A step is in progress if it's the next step after current status
-      const isInProgress = index === nextStepIndex;
-
-      let date = "Pending";
-      if (historyItem) {
-        const dateObj = new Date(historyItem.createdAt);
-        date = dateObj.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-          hour12: true,
-        });
-      } else if (status === "ORDER_DELIVERED" && currentIndex >= 3) {
-        // Example: Estimate delivery date 3 days after editing starts
-        const editingStartItem = sortedHistory.find(
-          (item) => item.status === "EDITING_IN_PROGRESS"
-        );
-        if (editingStartItem) {
-          const deliveryDate = new Date(editingStartItem.createdAt);
-          deliveryDate.setDate(deliveryDate.getDate() + 3);
-          date = `Expected ${deliveryDate.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}`;
-        }
-      }
-
-      return {
-        label: statusMap[status] || status,
-        date,
-        completed: isCompleted,
-        inProgress: isInProgress,
-      };
-    });
-
-    return {
-      id: apiData.bookingId,
-      steps,
-    };
-  };
-  // Debug logs for state changes
-  console.log("Current state:", { loading, error, bookingStatus });
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -243,7 +81,7 @@ const BookingStatusCard = () => {
           ) : (
             <button 
               className="mt-3 px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 text-sm"
-              onClick={() => window.location.reload()}
+              onClick={onRetry || (() => window.location.reload())}
             >
               Try Again
             </button>
@@ -324,7 +162,7 @@ const BookingStatusCard = () => {
             );
           })}
         </div>
-      </div>
+      </div> 
     </div>
   );
 };

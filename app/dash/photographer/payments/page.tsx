@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
-import { TrendingUp, XCircle, DollarSign } from "lucide-react";
+import { AverageCoins, XCircle, DollarSign, Download} from '@/components/icons';
+
 
 interface Transaction {
     invoiceId: string;
@@ -67,36 +68,48 @@ export default function PaymentsPage() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {/* Total Earnings Card */}
         <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <DollarSign className="text-gray-600" size={20} />
+            <div className="p-3 border border-gray-300 rounded-md">
+                <DollarSign size={25} />
+            </div>
             <div>
-            <div className="text-xs text-gray-500">Total Earnings</div>
-            <div className="text-xl font-semibold">AED 57,000</div>
+                <div className="text-xs text-gray-500">Total Earnings</div>
+                <div className="text-xl font-semibold">AED 57,000</div>
             </div>
         </div>
 
         {/* Average Earning per Booking Card */}
         <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <TrendingUp className="text-blue-600" size={20} />
+            <div className="p-3 border border-gray-200 rounded-md">
+                <AverageCoins size={25} />
+            </div>
             <div>
-            <div className="text-xs text-gray-500">Avg. Earning per Booking</div>
-            <div className="text-xl font-semibold">AED 127.5</div>
+                <div className="text-xs text-gray-500">Avg. Earning per Booking</div>
+                <div className="text-xl font-semibold">AED 127.5</div>
             </div>
         </div>
 
         {/* Failed Transactions Card */}
         <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-            <XCircle className="text-red-600" size={20} />
+            <div className="p-3 border border-gray-200 rounded-md">
+                <XCircle size={25} />
+            </div>
             <div>
-            <div className="text-xs text-gray-500">Failed Transactions</div>
-            <div className="text-xl font-semibold">AED 4,000</div>
+                <div className="text-xs text-gray-500">Failed Transactions</div>
+                <div className="text-xl font-semibold">AED 4,000</div>
             </div>
         </div>
       </div>
 
       {/* Recent Transactions */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-xl font-bold mb-4">Recent Transactions</h2>
-        <div className="overflow-x-auto border border-gray-200 rounded-lg">
+        <div className="flex justify-between items-center mb-4 pb-4 border-b border-gray-200">
+            <h2 className="text-xl font-bold">Recent Transactions</h2>
+            <button className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-md px-3 py-1.5">
+            <Download size={15} />
+            Download Reports
+            </button>
+        </div>
+        <div className="overflow-x-auto border border-gray-300 rounded-lg">
             <table className="w-full">
             <thead>
                 <tr className="text-left bg-gray-50">

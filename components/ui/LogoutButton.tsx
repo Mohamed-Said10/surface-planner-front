@@ -1,9 +1,9 @@
 'use client'
 import { signOut } from "next-auth/react"
-import { LogOut } from "lucide-react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
+import { LogOut } from '@/components/icons';
 
 export function LogoutButton() {
   const [isLoading, setIsLoading] = useState(false)

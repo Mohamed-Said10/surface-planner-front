@@ -183,7 +183,7 @@ export default function BookingsPage() {
                   <tr key={booking.id}>
                     <td className="px-6 py-4">
                       <a 
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/dash/booking-details/${booking.id}`} 
+                        href={`${process.env.NEXT_PUBLIC_API_URL}/dash/client/booking-details/${booking.id}`} 
                         className="text-sm underline text-[#0D4835]"
                       >
                         {booking.buildingName}, {booking.street}

@@ -1,8 +1,8 @@
 "use client";
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Check, CalendarDays, DollarSign, Wallet, Star } from "lucide-react"
 import BookingsTable from '@/components/shared/bookingsTable';
+import { DollarSign, DollarCircle, CalendarDays, Star} from '@/components/icons';
 
 // Import the Booking interface from your BookingsPage component
 export interface Booking {
@@ -205,41 +205,50 @@ export default function HomePage() {
   }
 
   return (
-    <div className="p-4 space-y-4">
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-          <CalendarDays className="text-green-600" size={20} />
-          <div>
-            <div className="text-xs text-gray-500">Active Bookings</div>
-            <div className="text-xl font-semibold">{stats.activeBookings}</div>
-          </div>
-        </div>
-        
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-          <DollarSign className="text-gray-600" size={20} />
-          <div>
-            <div className="text-xs text-gray-500">Total Earnings</div>
-            <div className="text-xl font-semibold">AED {stats.totalEarnings.toFixed(2)}</div>
-          </div>
-        </div>
+  <div className="p-4 space-y-4">
 
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-          <Wallet className="text-red-600" size={20} />
-          <div>
-            <div className="text-xs text-gray-500">Pending Payouts</div>
-            <div className="text-xl font-semibold">AED {stats.pendingPayouts.toFixed(2)}</div>
-          </div>
+    {/* Stats */}
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+        <div className="p-3 border border-gray-200 rounded-md">
+          <CalendarDays color="#0D824B" size={25} />
         </div>
-
-        <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
-          <Star className="text-yellow-500" size={20} />
-          <div>
-            <div className="text-xs text-gray-500">Average Ratings</div>
-            <div className="text-xl font-semibold">{stats.averageRating}</div>
-          </div>
+        <div>
+          <div className="text-xs text-gray-500">Active Bookings</div>
+          <div className="text-xl font-semibold">{stats.activeBookings}</div>
         </div>
       </div>
+      
+      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+        <div className="p-3 border border-gray-300 rounded-md">
+          <DollarCircle color="#515662" size={25} />
+        </div>
+        <div>
+          <div className="text-xs text-gray-500">Total Earnings</div>
+          <div className="text-xl font-semibold">AED {stats.totalEarnings}</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+        <div className="p-3 border border-gray-200 rounded-md">
+          <DollarSign color="#CC3A30" size={25} />
+        </div>
+        <div>
+          <div className="text-xs text-gray-500">Pending Payouts</div>
+          <div className="text-xl font-semibold">AED {stats.pendingPayouts}</div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-lg shadow p-4 flex items-center gap-3">
+        <div className="p-3 border border-gray-200 rounded-md">
+          <Star size={25} />
+        </div>
+        <div>
+          <div className="text-xs text-gray-500">Average Ratings</div>
+          <div className="text-xl font-semibold">{stats.averageRating}</div>
+        </div>
+      </div>
+    </div>
 
       {/* Upcoming Bookings */}
       <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
