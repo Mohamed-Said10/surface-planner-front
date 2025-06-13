@@ -144,7 +144,7 @@ export default function Header() {
       {pageInfo.showBookButton && (
         <Button 
           onClick={handleBookNewSession}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 bg-[#0F553E] hover:bg-[#689485]"
         >
           <Plus className="h-4 w-4" />
           Book a New Session

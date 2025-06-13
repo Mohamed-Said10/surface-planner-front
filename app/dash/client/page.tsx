@@ -3,6 +3,8 @@
 import { useSession } from "next-auth/react"
 import { useCallback, useEffect, useRef, useState } from "react"
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard"
+import { CalendarDaysCalculated, CalendarDays} from '@/components/icons';
+import { Photo, Video, Virtual } from '@/components/icons/addOns';
 import {
   transformStatusHistory,
   getStatusColor,
@@ -154,6 +156,8 @@ export default function HomePage() {
     return <div className="p-4 text-red-500">Error: {error}</div>
   }
 
+  console.log('tesst', bookings)
+
   return (
     <div className="p-4 space-y-4">
       <BookingStatusCard
@@ -165,78 +169,90 @@ export default function HomePage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-xs text-gray-500">Total Bookings</div>
-          <div className="text-xl font-semibold">{stats.totalBookings}</div>
+        <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
+          {/* <div className="text-xs text-gray-500"></div>
+          <div className="text-xl font-semibold">{stats.totalBookings}</div> */}
+          <div className="p-3 border border-[#DBDCDF] rounded-md">
+            <CalendarDays color="#0D824B" size={25} />
+          </div>
+          <div>
+            <div className="text-xs text-[#515662]">Total Bookings</div>
+            <div className="text-xl text-[#101828] font-semibold">{stats.totalBookings}</div>
+          </div>
         </div>
-        <div className="bg-white rounded-lg shadow p-4">
-          <div className="text-xs text-gray-500">Active Bookings</div>
-          <div className="text-xl font-semibold">{stats.activeBookings}</div>
+
+
+        <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
+          <div className="p-3 border border-[#DBDCDF] rounded-md">
+            <CalendarDaysCalculated size={25} dayNumber={stats.activeBookings}/>
+          </div>
+          <div>
+            <div className="text-xs text-[#515662]">Active Bookings</div>
+            <div className="text-xl text-[#101828] font-semibold">{stats.activeBookings}</div>
+          </div>
         </div>
       </div>
 
       {/* Recent Bookings */}
       <h2 className="text-lg font-semibold">My Bookings</h2>
 
-      <div className="bg-white rounded-lg shadow">
+      <div className="bg-white overflow-hidden rounded-lg border border-[#E0E0E0]">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Booking</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photographer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {bookings.map((booking) => (
-                <tr key={booking.id}>
-                  <td className="px-6 py-4">
-                    <Link href={`/dash/client/booking-details/${booking.id}`}
-                        className="text-sm underline text-[#0D4835]"
-                      >
-                        {booking.buildingName}, {booking.street}
-                      </Link>
-                    <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {booking.package.name}
-                      {booking.addOns.length > 0 && (
-                        <span className="ml-1">
-                          {booking.addOns
-                            .map((addon: any) => {
-                              if (addon.name.includes("Photo")) return "📸"
-                              if (addon.name.includes("Video")) return "🎥"
-                              return "✨"
-                            })
-                            .join(" ")}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      AED{" "}
-                      {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{booking.photographer?.firstname || "Not assigned"}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 inline-flex text-xs leading-5 rounded-full ${getStatusColor(booking.status)}`}
-                    >
-                      {formatStatus(booking.status)}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+  <thead>
+    <tr className="bg-gray-50">
+      <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Booking</th>
+      <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Package</th>
+      <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Price</th>
+      <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Photographer</th>
+      <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Status</th>
+    </tr>
+  </thead>
+  <tbody className="divide-y divide-gray-200">
+    {bookings.map((booking) => (
+      <tr key={booking.id} className="border-t border-[#E0E0E0]">
+        <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
+          <Link href={`/dash/client/booking-details/${booking.id}`}
+              className="text-sm underline text-[#0D4835]"
+            >
+              {booking.buildingName}, {booking.street}
+            </Link>
+          <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
+        </td>
+        <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
+          <div className="flex items-center text-sm text-[#515662]">
+            <span className="truncate">{booking.package.name}</span>
+            {booking.addOns.length > 0 && (
+              <span className="flex items-center gap-1 ml-1 shrink-0">
+                <span className="relative text-xl mb-1 font-extralight">+</span>
+                {booking.addOns.map((addon: any, index: any) => {
+                  if (addon.name.includes('Photo')) return <Photo key={index} />;
+                  if (addon.name.includes('Video')) return <Video key={index} />;
+                  if (addon.name.includes('Virtual')) return <Virtual key={index} />;
+                })}
+              </span>
+            )}
+          </div>
+        </td>
+        <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
+          <div className="text-sm text-[#515662]">
+            AED {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
+          </div>
+        </td>
+        <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
+          <div className="text-sm text-[#515662] truncate">{booking.photographer?.firstname || "Not assigned"}</div>
+        </td>
+        <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
+          <div className="flex justify-center">
+            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+              {formatStatus(booking.status)}
+            </span>
+          </div>
+        </td>
+      </tr>
+    ))}
+  </tbody>
+</table>
         </div>
       </div>
     </div>

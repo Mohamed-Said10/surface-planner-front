@@ -109,7 +109,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   return (
     <div>
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <h2 className="text-sm font-semibold mb-6">
           Booking #{bookingStatus.id.substring(0, 8)} Status
         </h2>
