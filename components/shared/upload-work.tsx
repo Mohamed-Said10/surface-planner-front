@@ -154,7 +154,7 @@ function UploadSection({
   }
 
   return (
-    <div className="border-b border-gray-200 pb-6 mb-6 last:border-b-0 last:pb-0 last:mb-0">
+    <div className=" border-gray-200 pb-6 mb-6 last:-0 last:pb-0 last:mb-0">
       <div className="flex items-start gap-6">
         <div className="w-40 flex-shrink-0">
           <h3 className="text-sm font-medium text-gray-900">{title}</h3>
@@ -164,7 +164,7 @@ function UploadSection({
           <div
             className={`relative border-2 border-dashed rounded-lg transition-all duration-200 ${
               isDragOver 
-                ? "border-blue-400 bg-blue-50 scale-105" 
+                ? "lue-400 bg-blue-50 scale-105" 
                 : "border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
             } ${uploadedFiles.length > 0 ? 'min-h-[200px]' : 'p-8'}`}
             onDragOver={uploadedFiles.length === 0 ? handleDragOver : undefined}
@@ -342,7 +342,8 @@ export default function UploadWork({ onFileUpload }: UploadWorkProps) {
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h2 className="text-lg font-semibold mb-3">Upload Work</h2>
-      <div className="border-b mb-3 mt-3"/>
+      <div className=" mb-3 mt-3"/>
+        <div className="dvideligne border-b mb-3 mt-3"/>
 
       <div className="space-y-0">
         {uploadSections.map((section, index) => (

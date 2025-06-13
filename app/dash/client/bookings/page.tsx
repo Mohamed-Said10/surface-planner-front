@@ -4,6 +4,7 @@ import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
+import Link from "next/link";
 
 interface Booking {
   id: string;
@@ -182,12 +183,11 @@ export default function BookingsPage() {
                 filteredBookings.map((booking) => (
                   <tr key={booking.id}>
                     <td className="px-6 py-4">
-                      <a 
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/dash/booking-details/${booking.id}`} 
+                      <Link href={`/dash/client/booking-details/${booking.id}`}
                         className="text-sm underline text-[#0D4835]"
                       >
                         {booking.buildingName}, {booking.street}
-                      </a>
+                      </Link>
                       <div className="text-xs text-gray-500">
                         {formatDate(booking.appointmentDate)}
                       </div>

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import Payement_Details from "@/components/shared/payment-details";
 import UploadWork from "@/components/shared/upload-work";
+
 interface Booking {
   id: string;
   status: string;
@@ -30,15 +31,25 @@ interface Booking {
     lastname: string;
     email: string;
     phoneNumber: string;
-    name?: string;
-    phone?: string;
-    location?: string;
   } | null;
+  client: {
+    firstname: string;
+    lastname: string;
+    email: string;
+  };
   firstName: string;
   lastName: string;
   phoneNumber: string;
   email: string;
   notes: string | null;
+  // Add payment data when available
+  payments?: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    paymentMethod: string;
+    createdAt: string;
+  }>;
 }
 
 interface Message {
@@ -60,7 +71,7 @@ export default function BookingDetailsPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   
-  // Modal states (preserved from your original code)
+  // Modal states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -81,29 +92,28 @@ export default function BookingDetailsPage() {
 
   const requestInProgress = useRef(false);
 
-  // Fetch booking details
+  // Fetch booking details - FIXED API CALL
   useEffect(() => {
     const fetchBookingDetails = async () => {
-
-      if (requestInProgress.current) return; // Skip if already fetching
+      if (requestInProgress.current) return;
       requestInProgress.current = true;
 
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:3000/api/bookings?id=${id}`, {
+        // Use the correct endpoint for single booking details
+        const response = await fetch(`/api/bookings/${id}`, {
           credentials: 'include'
         });
         
         if (!response.ok) throw new Error('Failed to fetch booking');
         
-        const data = await response.json();
-        if (data.bookings.length > 0) {
-          setBooking(data.bookings[0]);
-        }
+        const bookingData = await response.json();
+        setBooking(bookingData);
       } catch (error) {
         console.error("Error fetching booking:", error);
       } finally {
         setLoading(false);
+        requestInProgress.current = false;
       }
     };
 
@@ -119,9 +129,9 @@ export default function BookingDetailsPage() {
     const statusOrder = [
       "BOOKING_CREATED",
       "PHOTOGRAPHER_ASSIGNED", 
-      "SHOOT_IN_PROGRESS",
+      "SHOOTING",
       "EDITING",
-      "DELIVERED"
+      "COMPLETED"
     ];
     
     const currentIndex = statusOrder.indexOf(booking.status);
@@ -178,7 +188,7 @@ export default function BookingDetailsPage() {
     ];
   };
 
-  // Message handlers (preserved from your original code)
+  // Message handlers
   const handleSendMessage = () => {
     if (newMessage.trim()) {
       setMessages([
@@ -219,6 +229,7 @@ export default function BookingDetailsPage() {
       </div>
     );
   }
+
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "completed":
@@ -226,9 +237,9 @@ export default function BookingDetailsPage() {
       case "booking_created":
       case "scheduled":
         return "bg-yellow-100 text-yellow-800";
-          case "upcoming":
+      case "upcoming":
         return "bg-yellow-100 text-yellow-800";
-      case "shoot_done":
+      case "shooting":
       case "shoot in progress":
         return "bg-blue-100 text-blue-800";
       case "editing":
@@ -237,98 +248,76 @@ export default function BookingDetailsPage() {
         return "bg-gray-100 text-gray-800";
     }
   };
+
   const statusSteps = getStatusSteps();
   const completedSteps = statusSteps.filter(step => step.completed).length;
   const inProgressStep = statusSteps.findIndex(step => step.inProgress);
-const BOOKING = {
-  photographer: {
-    firstname: "John",
-    lastname: "Doe",
-    email: "john.doe@example.com",
-    phoneNumber: "+971 50 123 4567",
-  },
-  totalCost: 700,
-  paidAmount: 500,
-  payments: [
-    {
-      id: "120894",
-      datePaid: "March 3, 2025, 2:00 PM",
-      amount: 500,
-      method: "Credit Card",
-      status: "Paid",
-    },
-    {
-      id: "120894",
-      datePaid: "March 3, 2025, 2:00 PM",
-      amount: 200,
-      method: "Paypal",
-      status: "Failed",
-    },
-  ],
-}
+
   return (
     <div className="p-4 space-y-4">
-      {/* Booking Status - Dynamic */}
- 
-
       {/* Package Details - Dynamic */}
       <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-start justify-between gap-4 ">
-          <div className=" flex items-start gap-2 flex-wrap flex-col  ">
-                        <span className="text-lg font-semibold">Booking #SP2025</span>
-
-            <h2 className="text-sm ">{booking.package.name}</h2>
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-2 flex-wrap flex-col">
+            <span className="text-lg font-semibold">Booking #{booking.id.slice(0, 8)}</span>
+            <h2 className="text-sm">{booking.package.name}</h2>
           </div>
-          <div className={`text-sm font-medium px-3 py-1 rounded-full ${getStatusColor("upcoming")}`}>
-            <span>upcoming</span>
+          <div className={`text-sm font-medium px-3 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+            <span>{booking.status.replace('_', ' ').toLowerCase()}</span>
           </div>
         </div>
-        <div className="dvideligne border 1px mb-3 mt-3"/>
+        <div className="border-b mb-3 mt-3"/>
 
         <div className="grid grid-cols-3 gap-8 mb-4">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Include Services</h3>
             <p className="text-sm text-gray-700 font-medium">
-              Twilight Photos + 360 Virtual Tour
+              {booking.package.description || booking.package.name}
             </p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Scheduled Date & Time</h3>
             <p className="text-sm text-gray-700 font-medium">
-             March 3, 2025 – 2:00 PM
+              {new Date(booking.appointmentDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })} – {booking.timeSlot}
             </p>
           </div>
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Photographer Assigned</h3>
             <p className="text-sm text-gray-700 font-medium">
-          Michael Philips
+              {booking.photographer 
+                ? `${booking.photographer.firstname} ${booking.photographer.lastname}`
+                : 'Not assigned yet'
+              }
             </p>
           </div>
         </div>
-        <hr className="h-1 bg-red mb-4" />
+        <hr className="mb-4" />
         <div className="grid gap-4 grid-cols-4">
-        
           <button 
             onClick={() => setIsChatModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-white shadow-[0_2px_0_rgba(0,0,0,0.3)] bg-green-400 hover:bg-green-500"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[#12B76A] hover:bg-[#12B76A]/90 
+              shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
           >
             Accept Booking
           </button>
-            <button 
+          <button 
             onClick={() => setIsRescheduleModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 shadow-[0_2px_0_rgba(0,0,0,0.3)]"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
           >
             <Calendar className="h-4 w-4" />
             Reschedule Booking
           </button>
-        
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2  border rounded-lg text-gray-700  hover:bg-gray-50 shadow-[0_2px_0_rgba(0,0,0,0.3)] ">
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
             <NotebookText className="h-4 w-4" />
             Add Notes
           </button>
-            <button 
+          <button 
             onClick={() => setIsCancelModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50 shadow-[0_2px_0_rgba(0,0,0,0.3)]"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-red-600 border-red-300 rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
           >
             <XSquare className="h-4 w-4" /> 
             Cancel Booking
@@ -336,10 +325,8 @@ const BOOKING = {
         </div>
       </div>
 
-   
-<UploadWork/>
-   <Payement_Details/>
-
+      <UploadWork/>
+      <Payement_Details/>
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (
@@ -482,7 +469,7 @@ const BOOKING = {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-[500px] h-[600px] flex flex-col">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Help for Booking #{booking.id}</h2>
+              <h2 className="text-xl font-semibold">Help for Booking #{booking.id.slice(0, 8)}</h2>
               <button onClick={() => setIsChatModalOpen(false)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>
@@ -537,4 +524,3 @@ const BOOKING = {
       )}
     </div>
   );
-}

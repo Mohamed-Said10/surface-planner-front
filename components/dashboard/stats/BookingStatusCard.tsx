@@ -1,24 +1,7 @@
 "use client";
 import { Check } from "lucide-react";
 import Router from "next/router";
-import React, { useEffect, useRef, useState } from "react";
-
-interface StatusHistory {
-  id: string;
-  bookingId: string;
-  userId: string;
-  status: string;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    id: string;
-    firstname: string;
-    lastname: string;
-    email: string;
-    role: string;
-  };
-}
+import React from "react";
 
 interface BookingStatus {
   id: string;
@@ -30,166 +13,21 @@ interface BookingStatus {
   }[];
 }
 
-const BookingStatusCard = () => {
-  const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
-    null
-  );
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const requestMade = useRef(false); // Tracks if request has been made
-  const abortControllerRef = useRef<AbortController | null>(null);
-  const ignoreResponse = useRef(false); // Add this ref
+interface BookingStatusCardProps {
+  bookingStatus: BookingStatus | null;
+  loading: boolean;
+  error: string | null;
+  onRetry?: () => void;
+}
 
-  useEffect(() => {
-    // Create new controller for each request
-    abortControllerRef.current = new AbortController();
-    const signal = abortControllerRef.current.signal;
-    ignoreResponse.current = false; // Reset ignore flag
+const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
+  bookingStatus,
+  loading,
+  error,
+  onRetry
+}) => {
+  console.log("BookingStatusCard props:", { loading, error, bookingStatus });
 
-    const fetchStatusHistory = async () => {
-      try {
-        console.log("Starting fetch request");
-        setLoading(true);
-        setError(null);
-
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
-          {
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            signal
-          }
-        );
-
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch status");
-        }
-
-        const data = await response.json();
-        
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (!data?.bookingId) {
-          throw new Error("No booking data available");
-        }
-
-        const transformedData = transformStatusHistory(data);
-        setBookingStatus(transformedData);
-      } catch (err) {
-        if (ignoreResponse.current) return; // Skip if component unmounted
-        
-        if (err instanceof Error) {
-          if (err.name !== 'AbortError') {
-            setError(err.message);
-          }
-        }
-      } finally {
-        if (!ignoreResponse.current) {
-          setLoading(false);
-        }
-      }
-    };
-
-    fetchStatusHistory();
-
-    return () => {
-      // Mark that we should ignore the response
-      ignoreResponse.current = true;
-      // Abort any ongoing request
-      abortControllerRef.current?.abort();
-    };
-  }, []);
-
-
-
-  const transformStatusHistory = (apiData: {
-    bookingId: string;
-    statusHistory: StatusHistory[];
-  }): BookingStatus => {
-    // Map API status to your display labels
-    const statusMap: Record<string, string> = {
-      BOOKING_CREATED: "Booking Requested",
-      PHOTOGRAPHER_ASSIGNED: "Photographer Assigned",
-      SHOOTING: "Shoot in Progress",
-      EDITING: "Editing",
-      COMPLETED: "Order Delivery",
-    };
-
-    // Get all possible statuses in order
-    const allStatuses = [
-      "BOOKING_CREATED",
-      "PHOTOGRAPHER_ASSIGNED",
-      "SHOOTING",
-      "EDITING",
-      "COMPLETED",
-    ];
-    // Sort the status history by creation date (newest first)
-    const sortedHistory = [...apiData.statusHistory].sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    // Find the current status
-    const currentStatus = sortedHistory[0]?.status || ""; // Most recent status
-    const currentIndex = allStatuses.indexOf(currentStatus);
-
-    // Next step is the one after the current status
-    const nextStepIndex = currentIndex + 1;
-
-    // Create steps array
-    const steps = allStatuses.map((status, index) => {
-      const historyItem = sortedHistory.find((item) => item.status === status);
-
-      // A step is completed if it's the current status or any previous step
-      const isCompleted = index <= currentIndex;
-
-      // A step is in progress if it's the next step after current status
-      const isInProgress = index === nextStepIndex;
-
-      let date = "Pending";
-      if (historyItem) {
-        const dateObj = new Date(historyItem.createdAt);
-        date = dateObj.toLocaleString("en-US", {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-          hour12: true,
-        });
-      } else if (status === "ORDER_DELIVERED" && currentIndex >= 3) {
-        // Example: Estimate delivery date 3 days after editing starts
-        const editingStartItem = sortedHistory.find(
-          (item) => item.status === "EDITING_IN_PROGRESS"
-        );
-        if (editingStartItem) {
-          const deliveryDate = new Date(editingStartItem.createdAt);
-          deliveryDate.setDate(deliveryDate.getDate() + 3);
-          date = `Expected ${deliveryDate.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}`;
-        }
-      }
-
-      return {
-        label: statusMap[status] || status,
-        date,
-        completed: isCompleted,
-        inProgress: isInProgress,
-      };
-    });
-
-    return {
-      id: apiData.bookingId,
-      steps,
-    };
-  };
-  // Debug logs for state changes
-  console.log("Current state:", { loading, error, bookingStatus });
   if (loading) {
     return (
       <div className="bg-white rounded-lg shadow p-6">
@@ -243,7 +81,7 @@ const BookingStatusCard = () => {
           ) : (
             <button 
               className="mt-3 px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 text-sm"
-              onClick={() => window.location.reload()}
+              onClick={onRetry || (() => window.location.reload())}
             >
               Try Again
             </button>
@@ -257,7 +95,13 @@ const BookingStatusCard = () => {
     return (
       <div className="bg-white rounded-lg shadow p-6">
         <div className="text-center p-4 text-gray-500">
-          No booking status information available
+          <div role="status">
+    <svg aria-hidden="true" className="inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M100 50.5908C100 78.2051 77.6142 100.591 50 100.591C22.3858 100.591 0 78.2051 0 50.5908C0 22.9766 22.3858 0.59082 50 0.59082C77.6142 0.59082 100 22.9766 100 50.5908ZM9.08144 50.5908C9.08144 73.1895 27.4013 91.5094 50 91.5094C72.5987 91.5094 90.9186 73.1895 90.9186 50.5908C90.9186 27.9921 72.5987 9.67226 50 9.67226C27.4013 9.67226 9.08144 27.9921 9.08144 50.5908Z" fill="currentColor"/>
+        <path d="M93.9676 39.0409C96.393 38.4038 97.8624 35.9116 97.0079 33.5539C95.2932 28.8227 92.871 24.3692 89.8167 20.348C85.8452 15.1192 80.8826 10.7238 75.2124 7.41289C69.5422 4.10194 63.2754 1.94025 56.7698 1.05124C51.7666 0.367541 46.6976 0.446843 41.7345 1.27873C39.2613 1.69328 37.813 4.19778 38.4501 6.62326C39.0873 9.04874 41.5694 10.4717 44.0505 10.1071C47.8511 9.54855 51.7191 9.52689 55.5402 10.0491C60.8642 10.7766 65.9928 12.5457 70.6331 15.2552C75.2735 17.9648 79.3347 21.5619 82.5849 25.841C84.9175 28.9121 86.7997 32.2913 88.1811 35.8758C89.083 38.2158 91.5421 39.6781 93.9676 39.0409Z" fill="currentFill"/>
+    </svg>
+    <span className="sr-only">Loading...</span>
+</div>
         </div>
       </div>
     );
@@ -324,7 +168,7 @@ const BookingStatusCard = () => {
             );
           })}
         </div>
-      </div>
+      </div> 
     </div>
   );
 };
