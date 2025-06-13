@@ -148,16 +148,6 @@ export default function BookingsPage() {
     );
   }
 
-  const testBooking = {
-  package: {
-    name: "Gold"
-  },
-  addOns: [
-    { name: "Professional Photo" },
-    { name: "4K Video Recording" },
-    { name: "Sparkle Effect Virtual" }
-  ]
-};
 
   return (
     <div className="p-4">
@@ -213,11 +203,11 @@ export default function BookingsPage() {
                     </td>
                     <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
                       <div className="flex items-center text-sm text-[#515662]">
-                        <span className="truncate">{testBooking.package.name}</span>
-                        {testBooking.addOns.length > 0 && (
+                        <span className="truncate">{booking.package.name}</span>
+                        {booking.addOns.length > 0 && (
                           <span className="flex items-center gap-1 ml-1 shrink-0">
                             <span className="relative text-xl mb-1 font-extralight">+</span>
-                            {testBooking.addOns.map((addon: any, index: any) => {
+                            {booking.addOns.map((addon: any, index: any) => {
                               if (addon.name.includes('Photo')) return <Photo key={index} />;
                               if (addon.name.includes('Video')) return <Video key={index} />;
                               if (addon.name.includes('Virtual')) return <Virtual key={index} />;
