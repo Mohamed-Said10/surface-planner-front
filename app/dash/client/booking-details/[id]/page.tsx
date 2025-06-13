@@ -148,7 +148,7 @@ export default function BookingDetailsPage() {
 
       try {
         setLoading(true)
-        const response = await fetch(`http://localhost:3000/api/bookings?id=${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings?id=${id}`, {
           credentials: "include",
         })
 
@@ -278,31 +278,41 @@ export default function BookingDetailsPage() {
         </div>
         <hr className="h-1 bg-red mb-4" />
         <div className="grid gap-4 grid-cols-4">
-          <button
-            onClick={() => setIsRescheduleModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            <Calendar className="h-4 w-4" />
-            Reschedule Booking
-          </button>
-          <button
-            onClick={() => setIsChatModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            <HelpCircle className="h-4 w-4" />
-            Contact Support
-          </button>
-          <button
-            onClick={() => setIsCancelModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50"
-          >
-            <X className="h-4 w-4" />
-            Cancel Booking
-          </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200">
-            <Download className="h-4 w-4" />
-            Download Photos
-          </button>
+         <button
+  onClick={() => setIsRescheduleModalOpen(true)}
+  type="button"
+  disabled
+  className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <Calendar className="h-4 w-4" />
+  Reschedule Booking
+</button>
+<button
+  onClick={() => setIsChatModalOpen(true)}
+  type="button"
+  disabled
+  className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <HelpCircle className="h-4 w-4" />
+  Contact Support
+</button>
+<button
+  onClick={() => setIsCancelModalOpen(true)}
+  type="button"
+  disabled
+  className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <X className="h-4 w-4" />
+  Cancel Booking
+</button>
+<button 
+  type="button" 
+  disabled
+  className="text-sm justify-center flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <Download className="h-4 w-4" />
+  Download Photos
+</button>
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import {
   formatDate,
   type BookingStatus,
 } from "@/helpers/bookingStatusHelper"
+import Link from "next/link"
 
 export default function HomePage() {
   const { data: session, status } = useSession()
@@ -193,9 +194,11 @@ export default function HomePage() {
               {bookings.map((booking) => (
                 <tr key={booking.id}>
                   <td className="px-6 py-4">
-                    <div className="text-sm underline text-[#0D4835]">
-                      {booking.buildingName}, {booking.street}
-                    </div>
+                    <Link href={`/dash/client/booking-details/${booking.id}`}
+                        className="text-sm underline text-[#0D4835]"
+                      >
+                        {booking.buildingName}, {booking.street}
+                      </Link>
                     <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
                   </td>
                   <td className="px-6 py-4">

@@ -1,8 +1,38 @@
-'use client';
-import { useState } from "react";
+"use client";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Camera, Video, Box, Home, Settings, HelpCircle, LogOut } from "lucide-react";
+import {
+  Camera,
+  Video,
+  Box,
+  Home,
+  Settings,
+  HelpCircle,
+  LogOut,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import Link from "next/link";
+
+interface Booking {
+  id: string;
+  buildingName: string;
+  street: string;
+  appointmentDate: string;
+  package: {
+    name: string;
+    price: number;
+  };
+  addOns: Array<{
+    name: string;
+    price: number;
+  }>;
+  photographer: {
+    firstname: string;
+    lastname: string;
+  } | null;
+  status: string;
+}
 
 const projects = [
   {
@@ -13,7 +43,7 @@ const projects = [
     addons: ["📸", "🎥", "🚗"],
     price: "AED 250.00",
     photographer: "Theresa Webb",
-    status: "Shoot done"
+    status: "Shoot done",
   },
   {
     id: 2,
@@ -23,7 +53,7 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Courtney Henry",
-    status: "Completed"
+    status: "Completed",
   },
   {
     id: 3,
@@ -33,7 +63,7 @@ const projects = [
     addons: ["🚗"],
     price: "AED 250.00",
     photographer: "Wade Warren",
-    status: "Scheduled"
+    status: "Scheduled",
   },
   {
     id: 4,
@@ -43,7 +73,7 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Esther Howard",
-    status: "Canceled"
+    status: "Canceled",
   },
   {
     id: 5,
@@ -53,7 +83,7 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Guy Hawkins",
-    status: "Shoot done"
+    status: "Shoot done",
   },
   {
     id: 6,
@@ -63,7 +93,7 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Devon Lane",
-    status: "Completed"
+    status: "Completed",
   },
   {
     id: 7,
@@ -73,7 +103,7 @@ const projects = [
     addons: ["📸"],
     price: "AED 250.00",
     photographer: "Arlene McCoy",
-    status: "Scheduled"
+    status: "Scheduled",
   },
   {
     id: 8,
@@ -83,7 +113,7 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Bessie Cooper",
-    status: "Canceled"
+    status: "Canceled",
   },
   {
     id: 9,
@@ -93,28 +123,55 @@ const projects = [
     addons: [],
     price: "AED 250.00",
     photographer: "Brooklyn Simmons",
-    status: "Shoot done"
-  }
+    status: "Shoot done",
+  },
 ];
 
 export default function CompletedPage() {
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "scheduled":
-        return "bg-yellow-100 text-yellow-800";
-      case "canceled":
-        return "bg-red-100 text-red-800";
-      case "shoot done":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
+  const requestInProgress = useRef(false);
+  const { data: session, status } = useSession();
+
+  const fetchBookings = async () => {
+    if (requestInProgress.current) return; // Skip if already fetching
+    requestInProgress.current = true;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch bookings");
+      }
+
+      const data = await response.json();
+      setBookings(data.bookings);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load bookings");
+    } finally {
+      setLoading(false);
     }
   };
 
+  useEffect(() => {
+    if (status === "authenticated") {
+      fetchBookings();
+    }
+  }, [status]);
   return (
     <div className="p-4">
       <div className="bg-white rounded-lg shadow">
@@ -122,45 +179,90 @@ export default function CompletedPage() {
           <table className="w-full text[#0D4835]">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Booking</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photographer</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Booking
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Package
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Price
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                  Photographer
+                </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {projects.map((booking, index) => (
-                <tr key={booking.id}>
-                  <td className="px-6 py-4">
-                    <a href={`/dash/project-details/${index}`} className="text-sm underline text-[#0D4835]">{booking.location}</a>
-                    <div className="text-xs text-gray-500">{booking.date}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">
-                      {booking.package} {booking.addons.join(" ")}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{booking.price}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="text-sm text-gray-900">{booking.photographer}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex justify-between gap-4">
-                      <a className='flex flex-col items-center underline cursor-pointer text-sm text-gray-900'>
-                        <Camera className="h-4 w-4" />
-                        <span>View</span>
-                      </a>
-                      <a className='flex flex-col items-center underline cursor-pointer text-sm text-gray-900'>
-                        <Camera className="h-4 w-4" />
-                        <span>Download</span>
-                      </a>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {bookings.map((booking, index) =>
+                booking.status === "COMPLETED" ||
+                booking.status === "CANCELLED" ? (
+                  <>
+                    <tr key={booking.id}>
+                      <td className="px-6 py-4">
+                        <a
+                          href={`/dash/project-details/${index}`}
+                          className="text-sm underline text-[#0D4835]"
+                        >
+                          {booking.street} {booking.buildingName}
+                        </a>
+                        <div className="text-xs text-gray-500">
+                          {booking.appointmentDate}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          {booking.package.name}{" "}
+                          {booking.addOns.length > 0 && (
+                            <span className="ml-1">
+                              {booking.addOns
+                                .map((addon) => {
+                                  if (addon.name.includes("Photo")) return "📸";
+                                  if (addon.name.includes("Video")) return "🎥";
+                                  return "✨";
+                                })
+                                .join(" ")}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          {booking.package.price}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">
+                          {booking.photographer?.firstname}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex justify-between gap-4">
+                          <Link
+                            href="#"
+                            className="flex flex-col items-center text-sm text-gray-900 opacity-50 cursor-not-allowed"
+                            aria-disabled="true"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <Camera className="h-4 w-4" />
+                            <span>View</span>
+                          </Link>
+                          <Link
+                            href="#"
+                            className="flex flex-col items-center text-sm text-gray-900 opacity-50 cursor-not-allowed"
+                            aria-disabled="true"
+                            onClick={(e) => e.preventDefault()}
+                          >
+                            <Camera className="h-4 w-4" />
+                            <span>Download</span>
+                          </Link>
+                        </div>
+                      </td>
+                    </tr>
+                  </>
+                ) : null
+              )}
             </tbody>
           </table>
         </div>
