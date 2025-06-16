@@ -42,7 +42,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   // const userRole = (session?.user?.role as UserRole); 
-  const userRole = 'ADMIN' as UserRole;
+  const userRole = 'CLIENT' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole);
 
   // Helper functions
