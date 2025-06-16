@@ -199,60 +199,60 @@ export default function HomePage() {
       <div className="bg-white overflow-hidden rounded-lg border border-[#E0E0E0]">
         <div className="overflow-x-auto">
           <table className="w-full">
-  <thead>
-    <tr className="bg-gray-50">
-      <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Booking</th>
-      <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Package</th>
-      <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Price</th>
-      <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Photographer</th>
-      <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Status</th>
-    </tr>
-  </thead>
-  <tbody className="divide-y divide-gray-200">
-    {bookings.map((booking) => (
-      <tr key={booking.id} className="border-t border-[#E0E0E0]">
-        <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
-          <Link href={`/dash/client/booking-details/${booking.id}`}
-              className="text-sm underline text-[#0D4835]"
-            >
-              {booking.buildingName}, {booking.street}
-            </Link>
-          <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
-        </td>
-        <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
-          <div className="flex items-center text-sm text-[#515662]">
-            <span className="truncate">{booking.package.name}</span>
-            {booking.addOns.length > 0 && (
-              <span className="flex items-center gap-1 ml-1 shrink-0">
-                <span className="relative text-xl mb-1 font-extralight">+</span>
-                {booking.addOns.map((addon: any, index: any) => {
-                  if (addon.name.includes('Photo')) return <Photo key={index} />;
-                  if (addon.name.includes('Video')) return <Video key={index} />;
-                  if (addon.name.includes('Virtual')) return <Virtual key={index} />;
-                })}
-              </span>
-            )}
-          </div>
-        </td>
-        <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
-          <div className="text-sm text-[#515662]">
-            AED {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
-          </div>
-        </td>
-        <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
-          <div className="text-sm text-[#515662] truncate">{booking.photographer?.firstname || "Not assigned"}</div>
-        </td>
-        <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
-          <div className="flex justify-center">
-            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
-              {formatStatus(booking.status)}
-            </span>
-          </div>
-        </td>
-      </tr>
-    ))}
-  </tbody>
-</table>
+            <thead>
+              <tr className="bg-gray-50">
+                <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Booking</th>
+                <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Package</th>
+                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Price</th>
+                <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Photographer</th>
+                <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              {bookings.map((booking) => (
+                <tr key={booking.id} className="border-t border-[#E0E0E0]">
+                  <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
+                    <Link href={`/dash/client/booking-details/${booking.id}`}
+                        className="text-sm underline text-[#0D4835]"
+                      >
+                        {booking.buildingName}, {booking.street}
+                      </Link>
+                    <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
+                  </td>
+                  <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
+                    <div className="flex items-center text-sm text-[#515662]">
+                      <span className="truncate">{booking.package.name}</span>
+                      {booking.addOns.length > 0 && (
+                        <span className="flex items-center gap-1 ml-1 shrink-0">
+                          <span className="relative text-xl mb-1 font-extralight">+</span>
+                          {booking.addOns.map((addon: any, index: any) => {
+                            if (addon.name.includes('Photo')) return <Photo key={index} />;
+                            if (addon.name.includes('Video')) return <Video key={index} />;
+                            if (addon.name.includes('Virtual')) return <Virtual key={index} />;
+                          })}
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
+                    <div className="text-sm text-[#515662]">
+                      AED {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
+                    </div>
+                  </td>
+                  <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
+                    <div className="text-sm text-[#515662] truncate">{booking.photographer?.firstname || "Not assigned"}</div>
+                  </td>
+                  <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
+                    <div className="flex justify-center">
+                      <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+                        {formatStatus(booking.status)}
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
     </div>

@@ -16,4 +16,6 @@ export { default as Payoneer } from './Payoneer';
 export { default as WithdrawEarnings } from './WithdrawEarnings';
 export { default as CalendarDaysCalculated } from './CalendarDaysCalculated';
 export { default as Search } from './Search';
-// export { default as HelpCircle } from './HelpCircle';
+export { default as Support } from './Support';
+export { default as Completedprojects } from './Completedprojects';
+export { default as CompletedprojectsFull } from './CompletedprojectsFull';

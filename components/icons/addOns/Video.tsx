@@ -6,7 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-const Photo: React.FC<IconProps> = ({
+const Video: React.FC<IconProps> = ({
   size = 25,
   color = "#646973",
   className
@@ -19,4 +19,4 @@ const Photo: React.FC<IconProps> = ({
   );
 };
 
-export default Photo;
+export default Video;

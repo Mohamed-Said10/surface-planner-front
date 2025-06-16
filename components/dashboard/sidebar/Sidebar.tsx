@@ -1,20 +1,19 @@
 "use client";
 import { LogoutButton } from "@/components/ui/LogoutButton";
-import { CircleCheckBig, HelpCircle } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { UserRole } from "@/components/types/user";
-import { cn } from "@/lib/utils"; 
-import { DollarCircle, CalendarDays, Home, Settings } from '@/components/icons';
+import { cn } from "@/lib/utils";
+import { DollarCircle, DollarCircleFull, CalendarDays, CalendarDaysFull, Home, HomeFull, Completedprojects, CompletedprojectsFull, Settings, Support } from '@/components/icons';
 import { DashIcon } from "@radix-ui/react-icons";
 
 const ROLE_PATHS = {
   CLIENT: {
     base: '/dash/client',
     bookings: '/dash/client/bookings',
-    projects: '/dash/client/completed'    
+    projects: '/dash/client/completed'
   },
   PHOTOGRAPHER: {
     base: '/dash/photographer',
@@ -30,7 +29,7 @@ const ROLE_PATHS = {
 
 const getRolePaths = (role: UserRole) => {
   if (!ROLE_PATHS[role]) {
-    throw new Error(`Invalid role: ${role}`); 
+    throw new Error(`Invalid role: ${role}`);
   }
   return ROLE_PATHS[role];
 };
@@ -43,8 +42,8 @@ export default function Sidebar() {
   const router = useRouter();
 
   // const userRole = (session?.user?.role as UserRole); 
-  const userRole = 'CLIENT' as UserRole;
-  const { base, bookings, projects } = getRolePaths(userRole); 
+  const userRole = 'ADMIN' as UserRole;
+  const { base, bookings, projects } = getRolePaths(userRole);
 
   // Helper functions
   const truncateEmail = (email: string | null | undefined) => {
@@ -80,7 +79,7 @@ export default function Sidebar() {
 
     // Get all allowed paths for the current role
     const allowedPaths = Object.values(ROLE_PATHS[userRole]);
-    
+
     // Check if current path belongs to another role's namespace
     const isOtherRolesPath = Object.entries(ROLE_PATHS)
       .filter(([role]) => role !== userRole) // exclude current role
@@ -90,7 +89,7 @@ export default function Sidebar() {
       });
 
     // Check if current path is explicitly allowed
-    const isAllowed = allowedPaths.some(path => 
+    const isAllowed = allowedPaths.some(path =>
       pathname === path || pathname.startsWith(path + '/')
     );
 
@@ -115,12 +114,16 @@ export default function Sidebar() {
           onClick={() => handleNavigation(base)}
           className={cn(
             "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
-            isActive(base) 
-              ? "bg-gray-100 text-[#0F553E]" 
+            isActive(base)
+              ? "bg-gray-100 text-[#0F553E]"
               : "text-[#646973] hover:bg-gray-100"
           )}
         >
-          <Home className="h-5 w-5 mr-3" />
+          {isActive(base) ? (
+            <HomeFull className="h-5 w-5 mr-3" />
+          ) : (
+            <Home className="h-5 w-5 mr-3" />
+          )}
           Dashboard
         </button>
 
@@ -128,12 +131,16 @@ export default function Sidebar() {
           onClick={() => handleNavigation(bookings)}
           className={cn(
             "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
-            isActive(bookings) 
-              ? "bg-gray-100 text-[#0F553E]" 
+            isActive(bookings)
+              ? "bg-gray-100 text-[#0F553E]"
               : "text-[#646973] hover:bg-gray-100"
           )}
         >
-          <CalendarDays  className="h-5 w-5 mr-3" />
+          {isActive(bookings) ? (
+            <CalendarDaysFull className="h-5 w-5 mr-3" />
+          ) : (
+            <CalendarDays className="h-5 w-5 mr-3" />
+          )}
           My Bookings
         </button>
 
@@ -141,19 +148,27 @@ export default function Sidebar() {
           onClick={() => handleNavigation(projects)}
           className={cn(
             "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
-            isActive(projects) 
-              ? "bg-gray-100 text-[#0F553E]" 
+            isActive(projects)
+              ? "bg-gray-100 text-[#0F553E]"
               : "text-[#646973] hover:bg-gray-100"
           )}
         >
           {userRole === 'PHOTOGRAPHER' ? (
             <>
-              <DollarCircle size={24} color="#000" className="h-5 w-5 mr-3"/>
+              {isActive(projects) ? (
+                <DollarCircleFull size={24} color="#000" className="h-5 w-5 mr-3" />
+              ) : (
+                <DollarCircle size={24} color="#000" className="h-5 w-5 mr-3" />
+              )}
               Payments
             </>
           ) : (
             <>
-              <CircleCheckBig className="h-5 w-5 mr-3" />
+              {isActive(projects) ? (
+                <CompletedprojectsFull className="h-5 w-5 mr-3" />
+              ) : (
+                <Completedprojects className="h-5 w-5 mr-3" />
+              )}
               Completed Projects
             </>
           )}
@@ -188,31 +203,34 @@ export default function Sidebar() {
             </div>
           </div>
           <div className="space-y-1">
-            <button 
+            <button
               onClick={() => handleNavigation('/dash/settings')}
               className={cn(
                 "w-full text-sm flex items-center px-4 py-2 text-left rounded-lg transition-colors",
-                isActive('/dash/settings') 
-                  ? "bg-gray-100 text-[#0F553E]" 
+                isActive('/dash/settings')
+                  ? "bg-gray-100 text-[#0F553E]"
                   : "text-gray-600 hover:bg-gray-100"
               )}
             >
               <Settings className="h-4 w-4 mr-3" />
               Settings
             </button>
-            <button 
+            <button
+              disabled
               onClick={() => handleNavigation('/dash/support')}
               className={cn(
                 "w-full text-sm flex items-center px-4 py-2 text-left rounded-lg transition-colors",
-                isActive('/dash/support') 
-                  ? "bg-gray-100 text-[#0F553E]" 
-                  : "text-gray-600 hover:bg-gray-100"
+                isActive('/dash/support')
+                  ? "bg-gray-100 text-[#0F553E]"
+                  : "text-gray-600 hover:bg-gray-100",
+                "disabled:opacity-50 disabled:cursor-not-allowed"
               )}
             >
-              <HelpCircle className="h-4 w-4 mr-3" />
+              <Support className="h-4 w-4 mr-3" />
               Help & Support
             </button>
-            <LogoutButton/>
+
+            <LogoutButton />
           </div>
         </div>
       </div>
