@@ -6,7 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-const CalendarIcon: React.FC<IconProps> = ({
+const CalendarDays: React.FC<IconProps> = ({
   size = 25,
   color = "#646973",
   className
@@ -54,4 +54,4 @@ const CalendarIcon: React.FC<IconProps> = ({
   );
 };
 
-export default CalendarIcon;
+export default CalendarDays;

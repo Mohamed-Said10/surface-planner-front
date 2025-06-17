@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { Search } from '@/components/icons';
+import { Photo, Video, Virtual } from '@/components/icons/addOns';
 
 interface Booking {
   id: string;
@@ -146,21 +148,28 @@ export default function BookingsPage() {
     );
   }
 
+
   return (
     <div className="p-4">
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-4 border-b flex justify-between items-center">
-          <Input
-            type="search"
-            placeholder="Search bookings..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="max-w-md"
-          />
+      <div className="bg-white overflow-hidden rounded-lg border border-[#E0E0E0]">
+        <div className="p-4 border-b flex justify-between items-center bg-[#F5F6F6]">
+          <div className="relative mb-1">
+            <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-[#93979E] pointer-events-none">
+              <Search size={20} className="mr-2" />
+            </span>
+            <Input
+              type="search"
+              placeholder="Search"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md pl-10 placeholder:text-base placeholder:text-[#93979E] focus-visible:ring-0 focus-visible:ring-offset-0 border-0 shadow-none"
+            />
+          </div>
           <Button 
             onClick={fetchBookings}
             variant="outline"
             size="sm"
+            disabled={true}
           >
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
@@ -171,18 +180,18 @@ export default function BookingsPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Booking</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Package</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Price</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Photographer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Booking</th>
+                <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Package</th>
+                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Price</th>
+                <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Photographer</th>
+                <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Status</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
               {filteredBookings.length > 0 ? (
                 filteredBookings.map((booking) => (
-                  <tr key={booking.id}>
-                    <td className="px-6 py-4">
+                  <tr key={booking.id} className="border-t border-[#E0E0E0]">
+                    <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
                       <Link href={`/dash/client/booking-details/${booking.id}`}
                         className="text-sm underline text-[#0D4835]"
                       >
@@ -192,43 +201,46 @@ export default function BookingsPage() {
                         {formatDate(booking.appointmentDate)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
-                        {booking.package.name}
+                    <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
+                      <div className="flex items-center text-sm text-[#515662]">
+                        <span className="truncate">{booking.package.name}</span>
                         {booking.addOns.length > 0 && (
-                          <span className="ml-1">
-                            {booking.addOns.map(addon => {
-                              if (addon.name.includes('Photo')) return '📸';
-                              if (addon.name.includes('Video')) return '🎥';
-                              return '✨';
-                            }).join(' ')}
+                          <span className="flex items-center gap-1 ml-1 shrink-0">
+                            <span className="relative text-xl mb-1 font-extralight">+</span>
+                            {booking.addOns.map((addon: any, index: any) => {
+                              if (addon.name.includes('Photo')) return <Photo key={index} />;
+                              if (addon.name.includes('Video')) return <Video key={index} />;
+                              if (addon.name.includes('Virtual')) return <Virtual key={index} />;
+                            })}
                           </span>
                         )}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
+                    <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
+                      <div className="text-sm text-[#515662]">
                         AED {booking.package.price + 
                             booking.addOns.reduce((sum, addon) => sum + addon.price, 0)}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">
+                    <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
+                      <div className="text-sm text-[#515662] truncate">
                         {booking.photographer ? 
                           `${booking.photographer.firstname} ${booking.photographer.lastname}` : 
                           'Not assigned'}
                       </div>
                     </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2 inline-flex text-xs leading-5 rounded-full ${getStatusColor(booking.status)}`}>
-                        {formatStatus(booking.status)}
-                      </span>
+                    <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
+                      <div className="flex justify-center">
+                        <span className={`px-2 py-1 inline-flex text-xs leading-5 rounded-full ${getStatusColor(booking.status)}`}>
+                          {formatStatus(booking.status)}
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500">
+                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 border-r border-[#E0E0E0]">
                     {searchTerm ? 'No matching bookings found' : 'No bookings available'}
                   </td>
                 </tr>
