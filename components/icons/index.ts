@@ -19,3 +19,7 @@ export { default as Search } from './Search';
 export { default as Support } from './Support';
 export { default as Completedprojects } from './Completedprojects';
 export { default as CompletedprojectsFull } from './CompletedprojectsFull';
+
+export { default as Clock } from './Clock';
+export { default as CameraTool } from './CameraTool';
+export { default as Notes } from './Notes';

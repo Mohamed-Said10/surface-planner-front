@@ -42,7 +42,7 @@ export default function Sidebar() {
   const router = useRouter();
 
   // const userRole = (session?.user?.role as UserRole); 
-  const userRole = 'CLIENT' as UserRole;
+  const userRole = 'ADMIN' as UserRole;
   const { base, bookings, projects } = getRolePaths(userRole);
 
   // Helper functions
@@ -55,6 +55,13 @@ export default function Sidebar() {
     // Exact match for base dashboard route
     if (path === base) {
       return pathname === base;
+    }
+    if (
+      userRole === 'ADMIN' &&
+      path === bookings &&
+      (pathname.startsWith(bookings) || pathname.startsWith('/dash/admin/booking-details'))
+    ) {
+      return true;
     }
     // For other routes, use startsWith
     return pathname.startsWith(path);
@@ -141,7 +148,7 @@ export default function Sidebar() {
           ) : (
             <CalendarDays className="h-5 w-5 mr-3" />
           )}
-          My Bookings
+          {userRole === 'ADMIN' ? 'Bookings' : 'My Bookings'}
         </button>
 
         <button
