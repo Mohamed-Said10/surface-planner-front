@@ -184,10 +184,10 @@ function UploadSection({
             {uploadedFiles.length === 0 ? (
               <div className="flex flex-col items-center text-center">
                 <Upload className={`h-8 w-8 mb-3 transition-colors ${
-                  isDragOver ? "text-blue-500" : "text-gray-400"
+                  isDragOver ? "text-blue-500" : "text-[#0F553E]"
                 }`} />
                 <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium text-gray-900">Click to upload</span> or drag and drop
+                  <span className="font-medium text-[#0F553E]">Click to upload</span> or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">{acceptedFormats}</p>
                 <p className="text-xs text-gray-400 mt-1">Max size: {maxSize}MB</p>
@@ -340,7 +340,7 @@ export default function UploadWork({ onFileUpload }: UploadWorkProps) {
   ]
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
       <h2 className="text-lg font-semibold mb-3">Upload Work</h2>
       <div className=" mb-3 mt-3"/>
         <div className="dvideligne border-b mb-3 mt-3"/>
