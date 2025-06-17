@@ -71,8 +71,9 @@ export default function BookingsPage() {
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-console.log(bookings,' bookings');
   const requestInProgress = useRef(false);
+  const [selectedTab, setSelectedTab] = useState<'pending' | 'upcoming' | 'completed'>('pending');
+
 
   const fetchBookings = async () => {
     if (requestInProgress.current) return;
@@ -109,8 +110,9 @@ console.log(bookings,' bookings');
     }
   }, [status]);
 
+  const pendingBookings = bookings.filter(booking => booking.status === 'EDITING');
   const upcomingBookings = bookings.filter(booking => booking.status !== "COMPLETED");
-const completedBookings = bookings.filter(booking => booking.status === "COMPLETED");
+  const completedBookings = bookings.filter(booking => booking.status === "COMPLETED");
 
 
   if (loading) {
@@ -140,11 +142,27 @@ const completedBookings = bookings.filter(booking => booking.status === "COMPLET
 
   return (
     <div className="p-4 space-y-4">
-      {/* Upcoming Bookings */}
-      <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
+      <div className="w-full bg-white">
+        <div className="flex w-full border-b border-gray-200">
+          {['pending', 'upcoming', 'completed'].map(tab => (
+            <button
+              key={tab}
+              onClick={() => setSelectedTab(tab as 'pending' | 'upcoming' | 'completed')}
+              className={`flex-1 px-4 py-3 text-center text-sm font-medium ${
+                selectedTab === tab
+                  ? 'border-b-2 border-black text-black bg-white'
+                  : 'border-b-2 border-transparent text-gray-500 hover:text-black hover:bg-gray-50'
+              }`}
+            >
+              {tab === 'pending' ? 'Pending Upload' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* Completed Bookings */}
-      <BookingsTable title="Completed Bookings" bookings={completedBookings} />
+      {selectedTab === 'pending' && <BookingsTable title="Pending Upload" bookings={upcomingBookings} />}
+      {selectedTab === 'upcoming' && <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />}
+      {selectedTab === 'completed' && <BookingsTable title="Completed Bookings" bookings={completedBookings} />}
     </div>
   );
 }

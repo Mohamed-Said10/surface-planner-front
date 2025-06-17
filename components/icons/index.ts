@@ -14,4 +14,5 @@ export { default as Download } from './Download';
 export { default as Paypal } from './Paypal';
 export { default as Payoneer } from './Payoneer';
 export { default as WithdrawEarnings } from './WithdrawEarnings';
+export { default as ActiveJobsLabel } from './ActiveJobsLabel';
 // export { default as HelpCircle } from './HelpCircle';

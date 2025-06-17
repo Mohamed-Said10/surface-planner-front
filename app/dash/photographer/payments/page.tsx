@@ -1,7 +1,8 @@
 "use client";
 import React, { useState }from "react";
-import { AverageCoins, XCircle, DollarSign, Download} from '@/components/icons';
+import { AverageCoins, ActiveJobsLabel, DollarSign, Download} from '@/components/icons';
 import WithdrawEarningsModal from '@/components/modals/WithdrawEarningsModal';
+import { EarningsBarChart } from '@/components/charts/earningsBarChart';
 
 
 interface Transaction {
@@ -76,43 +77,53 @@ export default function PaymentsPage() {
   
   return (
     <div className="p-6">
-      {/* <h1 className="text-2xl font-bold mb-6">Payments</h1> */}
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-6">
+            <div className="lg:col-span-2 space-y-5">
+                <div className="bg-white border border-[#DBDCDF] rounded-lg p-5 flex items-center gap-2">
+                    <div className="p-4 border border-[#DBDCDF] rounded-md">
+                        <DollarSign size={25} />
+                    </div>
+                    <div>
+                        <div className="text-xs text-[#515662]">Total Earnings</div>
+                        <div className="text-xl font-semibold text-[#101828]">AED 57,000</div>
+                    </div>
+                </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        {/* Total Earnings Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
-            <div className="p-3 border border-[#DBDCDF] rounded-md">
-                <DollarSign size={25} />
+                <div className="bg-white border border-[#DBDCDF] rounded-lg p-5 flex items-center gap-2">
+                    <div className="p-4 border border-[#DBDCDF] rounded-md">
+                        <ActiveJobsLabel size={25} />
+                    </div>
+                    <div>
+                        <div className="text-xs text-[#515662]">Active Jobs Amount</div>
+                        <div className="text-xl font-semibold text-[#101828]">AED 87.5</div>
+                    </div>
+                </div>
+
+                <div className="bg-white border border-[#DBDCDF] rounded-lg p-5 flex items-center gap-2">
+                    <div className="p-4 border border-[#DBDCDF] rounded-md">
+                        <AverageCoins size={25} />
+                    </div>
+                    <div>
+                        <div className="text-xs text-[#515662]">Avg. Earning per Booking</div>
+                        <div className="text-xl font-semibold text-[#101828]">AED 127.5</div>
+                    </div>
+                </div>
             </div>
-            <div>
-                <div className="text-xs text-[#515662]">Total Earnings</div>
-                <div className="text-xl font-semibold text-[#101828]">AED 57,000</div>
+
+            <div className="col-span-4 bg-white border border-[#DBDCDF] rounded-lg pr-4 pt-1 mb-4">
+                <div className="flex justify-between items-center my-6">
+                <h2 className="text-lg font-semibold text-[#101828] px-4">Earnings</h2>
+                <select className="border border-gray-300 rounded-lg pl-3 pr-12 py-1 text-sm text-gray-700 focus:outline-none focus:ring-0">
+                    <option>2024</option>
+                    <option>2023</option>
+                    <option>2022</option>
+                </select>
+                </div>
+                <EarningsBarChart />
             </div>
         </div>
 
-        {/* Average Earning per Booking Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
-            <div className="p-3 border border-[#DBDCDF] rounded-md">
-                <AverageCoins size={25} />
-            </div>
-            <div>
-                <div className="text-xs text-[#515662]">Avg. Earning per Booking</div>
-                <div className="text-xl font-semibold text-[#101828]">AED 127.5</div>
-            </div>
-        </div>
 
-        {/* Failed Transactions Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
-            <div className="p-3 border border-[#DBDCDF] rounded-md">
-                <XCircle size={25} />
-            </div>
-            <div>
-                <div className="text-xs text-[#515662]">Failed Transactions</div>
-                <div className="text-xl font-semibold text-[#101828]">AED 4,000</div>
-            </div>
-        </div>
-      </div>
 
       {/* Recent Transactions */}
       <div className="bg-white border border-[#DBDCDF] rounded-lg p-6">
