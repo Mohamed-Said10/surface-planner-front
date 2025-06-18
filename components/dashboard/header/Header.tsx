@@ -3,7 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useEffect, useState } from 'react';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { Plus } from 'lucide-react';
+import { ArrowLeft} from '@/components/icons';
 
 // Configuration des pages avec leurs titres et sous-titres
 const PAGE_CONFIG = {
@@ -116,7 +117,7 @@ export default function Header() {
 
   return (
     <div className="flex justify-between items-center p-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
         {pageInfo.showBackButton && (
           <Button
             variant="ghost"
@@ -124,8 +125,7 @@ export default function Header() {
             onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ArrowLeft size={30}  />
           </Button>
         )}
         

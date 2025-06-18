@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { Check, Calendar, X, Send, NotebookText } from "lucide-react";
 import UploadWork from "@/components/shared/upload-work";
 import { CheckCircle, XSquare } from '@/components/icons';
+import { useRouter } from "next/navigation";
 
 interface Booking {
   id: string;
@@ -65,6 +66,7 @@ const timeSlots = [
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { data: session } = useSession();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
@@ -191,80 +193,80 @@ export default function BookingDetailsPage() {
 
   // Status steps based on booking status
   const getStatusSteps = () => {
-  if (!booking) return [];
-  
-  // Vérifier si tous les fichiers sont uploadés
-  const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
-  
-  const getStepStatus = (stepName: string) => {
-    switch (stepName) {
-      case 'Booking Requested':
-        return { completed: true, date: "May 5, 5:54 AM" };
-      case 'Photographer Assigned':
-        return { 
-          completed: isAccepted || allFilesUploaded, 
-          date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending" 
-        };
-      case 'Shoot':
-        return { 
-          completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
-          inProgress: shootStatus === 'shooting' && !allFilesUploaded,
-          upcoming: shootStatus === 'ready' && !allFilesUploaded,
-          date: allFilesUploaded 
-            ? "Completed" 
-            : shootStatus === 'completed' || shootStatus === 'uploading' 
+    if (!booking) return [];
+    
+    // Vérifier si tous les fichiers sont uploadés
+    const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
+    
+    const getStepStatus = (stepName: string) => {
+      switch (stepName) {
+        case 'Booking Requested':
+          return { completed: true, date: "May 5, 5:54 AM" };
+        case 'Photographer Assigned':
+          return { 
+            completed: isAccepted || allFilesUploaded, 
+            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending" 
+          };
+        case 'Shoot':
+          return { 
+            completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
+            inProgress: shootStatus === 'shooting' && !allFilesUploaded,
+            upcoming: shootStatus === 'ready' && !allFilesUploaded,
+            date: allFilesUploaded 
               ? "Completed" 
-              : shootStatus === 'shooting' 
-                ? "In Progress" 
-                : shootStatus === 'ready' 
-                  ? "Ready to Start" 
-                  : "Starts Soon"
-        };
-      case 'Editing':
-        const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
-        
-        return { 
-          completed: allFilesUploaded,
-          inProgress: hasUploadedFiles && !allFilesUploaded,
-          date: allFilesUploaded 
-            ? "All Files Uploaded - Complete"
-            : hasUploadedFiles 
-              ? "Upload in Progress"
-              : "Not Started Yet"
-        };
-      case 'Order Delivery':
-        return { 
-          completed: allFilesUploaded, 
-          date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025" 
-        };
-      default:
-        return { completed: false, date: "Pending" };
-    }
+              : shootStatus === 'completed' || shootStatus === 'uploading' 
+                ? "Completed" 
+                : shootStatus === 'shooting' 
+                  ? "In Progress" 
+                  : shootStatus === 'ready' 
+                    ? "Ready to Start" 
+                    : "Starts Soon"
+          };
+        case 'Editing':
+          const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
+          
+          return { 
+            completed: allFilesUploaded,
+            inProgress: hasUploadedFiles && !allFilesUploaded,
+            date: allFilesUploaded 
+              ? "All Files Uploaded - Complete"
+              : hasUploadedFiles 
+                ? "Upload in Progress"
+                : "Not Started Yet"
+          };
+        case 'Order Delivery':
+          return { 
+            completed: allFilesUploaded, 
+            date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025" 
+          };
+        default:
+          return { completed: false, date: "Pending" };
+      }
+    };
+    
+    return [
+      { 
+        label: "Booking Requested", 
+        ...getStepStatus('Booking Requested')
+      },
+      { 
+        label: "Photographer Assigned", 
+        ...getStepStatus('Photographer Assigned')
+      },
+      { 
+        label: "Shoot", 
+        ...getStepStatus('Shoot')
+      },
+      { 
+        label: "Editing", 
+        ...getStepStatus('Editing')
+      },
+      {
+        label: "Order Delivery",
+        ...getStepStatus('Order Delivery')
+      }
+    ];
   };
-  
-  return [
-    { 
-      label: "Booking Requested", 
-      ...getStepStatus('Booking Requested')
-    },
-    { 
-      label: "Photographer Assigned", 
-      ...getStepStatus('Photographer Assigned')
-    },
-    { 
-      label: "Shoot", 
-      ...getStepStatus('Shoot')
-    },
-    { 
-      label: "Editing", 
-      ...getStepStatus('Editing')
-    },
-    {
-      label: "Order Delivery",
-      ...getStepStatus('Order Delivery')
-    }
-  ];
-};
 
   // Message handlers
   const handleSendMessage = () => {
@@ -319,6 +321,16 @@ export default function BookingDetailsPage() {
       const newProgress = { ...prev, [section]: hasFiles };
       return newProgress;
     });
+  };
+
+  const handleRejectBooking = () => {
+    const storedPreviousPath = sessionStorage.getItem('previousPath');
+    
+    if (storedPreviousPath && storedPreviousPath !== window.location.pathname) {
+      router.push(storedPreviousPath);
+    } else {
+      router.push('/dash/photographer/bookings');
+    }
   };
 
   if (loading) {
@@ -435,6 +447,7 @@ export default function BookingDetailsPage() {
               Accept Booking
             </button>
             <button 
+              onClick={handleRejectBooking}
               className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-[#CC3A30] border-red-300 hover:bg-gray-50"
             >
               <XSquare className="h-4 w-4" />
@@ -759,7 +772,10 @@ export default function BookingDetailsPage() {
                   Keep Booking
                 </button>
                 <button
-                  onClick={handleCancel}
+                  onClick={() => {
+                    handleCancel();
+                    handleRejectBooking();
+                  }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg"
                 >
                   Cancel Booking
