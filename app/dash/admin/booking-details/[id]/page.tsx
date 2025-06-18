@@ -1,13 +1,22 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
+import { useCallback,useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, HelpCircle, X, Download, Send, Notebook, NotebookText, XSquare  } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { CameraTool,Notes, CalendarDaysCalculated} from '@/components/icons';
+import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import CustomerCard from "@/components/shared/CustomerCard";
 import PropertyCard from "@/components/shared/PropertyCard";
+import {
+  transformStatusHistory,
+  getStatusColor,
+  formatStatus,
+  formatDate,
+  type BookingStatus,
+} from "@/helpers/bookingStatusHelper";
+import Link from "next/link";
 
 interface Booking {
   id: string;
@@ -67,22 +76,16 @@ const timeSlots = [
   { id: 2, time: '1 PM - 4 PM', duration: '3 hours', price: 250 },
   { id: 3, time: '5 PM - 8 PM', duration: '3 hours', price: 250 }
 ];
-const bookingStatus = {
-  id: "1279486",
-  steps: [
-    { label: "Booking Requested", date: "May 5, 5:54 AM", completed: true },
-    { label: "Photographer Assigned", date: "May 5, 8:54 AM", completed: true },
-    { label: "Shoot in Progress", date: "May 5, 8:54 AM", completed: true },
-    { label: "Editing", date: "Currently", completed: true, inProgress: false },
-    { label: "Order Delivery", date: "Expected May 8, 2025", completed: true }
-  ]
-};
+
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
   const { data: session } = useSession();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
+    null
+  );
   
   // Modal states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
@@ -93,6 +96,10 @@ export default function BookingDetailsPage() {
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [statusLoading, setStatusLoading] = useState(true);
+  const [statusError, setStatusError] = useState<string | null>(null);
+  const abortControllerRef = useRef<AbortController | null>(null);
+  const ignoreResponse = useRef(false);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -106,7 +113,57 @@ export default function BookingDetailsPage() {
   const requestInProgress = useRef(false);
 
   // Fetch booking details - FIXED API CALL
-  useEffect(() => {
+  const fetchStatusHistory = useCallback(async () => {
+      abortControllerRef.current = new AbortController();
+      const signal = abortControllerRef.current.signal;
+      ignoreResponse.current = false;
+  
+      try {
+        console.log("Starting fetch request");
+        setStatusLoading(true);
+        setStatusError(null);
+  
+        const response = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
+          {
+            credentials: "include",
+            headers: { "Content-Type": "application/json" },
+            signal,
+          }
+        );
+  
+        if (ignoreResponse.current) return;
+  
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Failed to fetch status");
+        }
+  
+        const data = await response.json();
+  
+        if (ignoreResponse.current) return;
+  
+        if (!data?.bookingId) {
+          throw new Error("No booking data available");
+        }
+  
+        const transformedData = transformStatusHistory(data);
+        setBookingStatus(transformedData);
+      } catch (err) {
+        if (ignoreResponse.current) return;
+  
+        if (err instanceof Error) {
+          if (err.name !== "AbortError") {
+            setStatusError(err.message);
+          }
+        }
+      } finally {
+        if (!ignoreResponse.current) {
+          setStatusLoading(false);
+        }
+      }
+    }, []);
+    useEffect(() => {
     const fetchBookingDetails = async () => {
       if (requestInProgress.current) return;
       requestInProgress.current = true;
@@ -130,11 +187,11 @@ export default function BookingDetailsPage() {
         requestInProgress.current = false;
       }
     };
-
+    fetchStatusHistory();
     if (session && id) {
       fetchBookingDetails();
     }
-  }, [session, id]);
+  }, [session, id, fetchStatusHistory]);
 
   // Status steps based on booking status
   const getStatusSteps = () => {
@@ -270,7 +327,7 @@ export default function BookingDetailsPage() {
   return (
     <div className="p-4 space-y-4">
       {/* Package Details - Dynamic */}
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg  border border-[#DBDCDF] p-6">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-2 flex-wrap flex-col">
             <span className="text-lg font-semibold">Booking #{booking.id.slice(0, 8)}</span>
@@ -313,22 +370,22 @@ export default function BookingDetailsPage() {
         <div className="grid gap-4 grid-cols-4">
           <button 
             onClick={() => setIsRescheduleModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]"
           >
             <CalendarDaysCalculated color="black" className="h-4 w-4" />
             Reschedule Booking
           </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]">
             <CameraTool className="h-4 w-4" />
             Assign a photographer
           </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]">
             <Notes className="h-4 w-4" />
             Add Notes
           </button>
           <button 
             onClick={() => setIsCancelModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-red-600 border-red-300 rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-[#CC3A30] border border-[#F9AFA9] rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]"
           >
             <XSquare className="h-4 w-4" /> 
             Cancel Booking
@@ -337,34 +394,13 @@ export default function BookingDetailsPage() {
       </div>
 
       {/* Booking Status */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold text-gray-800 mb-2">
-        Status
-      </h2>
-      <hr className="border-gray-300 mb-4" />
-        <div className="relative grid justify-between grid-cols-5">
-          {bookingStatus.steps.map((step, index) => (
-            <div key={index} className="col-span-1 flex flex-col items-left text-left relative z-10">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 
-                      ${step.completed ? 'bg-emerald-500' : step.inProgress ? 'bg-orange-500' : 'bg-gray-200'}`}>
-                {step.completed ? (
-                  <Check className="h-5 w-5 text-white" />
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                )}
-              </div>
-              <div className="text-xs font-medium">{step.label}</div>
-              <div className="text-xs text-gray-500">{step.date}</div>
-            </div>
-          ))}
-          {/* Progress Lines */}
-          <div className="absolute top-3 left-0 w-full h-[2px] flex">
-            <div className="h-full bg-emerald-500" style={{ width: '60%' }} />
-            <div className="h-full bg-emerald-500" style={{ width: '15%' }} />
-            <div className="h-full bg-emerald-500" style={{ width: '25%' }} />
-          </div>
-        </div>
-      </div>
+      <BookingStatusCard
+        bookingStatus={bookingStatus}
+        loading={statusLoading}
+        error={statusError}
+        onRetry={fetchStatusHistory}
+      />
+      
 
       
       {/* Customer infos Card */}
@@ -478,7 +514,7 @@ export default function BookingDetailsPage() {
             <div className="p-6 flex justify-between items-center">
               <h2 className="text-xl font-semibold">Cancel Booking</h2>
               <button onClick={() => setIsCancelModalOpen(false)}>
-                <X className="h-10 w-10 text-black" />
+                <X className="h-8 w-8 text-black" />
               </button>
             </div>
             <div className="p-6">
@@ -488,9 +524,10 @@ export default function BookingDetailsPage() {
               <div className="flex justify-end gap-4">
                 <button
                   onClick={handleCancel}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg"
+                  className="w-full px-4 py-2 bg-[#F04438] text-white rounded-lg flex items-center justify-center gap-2"
                 >
-                  Cancel Booking
+                  <X className="h-5 w-5 text-white" />
+                  Cancel
                 </button>
               </div>
             </div>

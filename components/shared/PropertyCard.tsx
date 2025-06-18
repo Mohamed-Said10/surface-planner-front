@@ -5,9 +5,9 @@ interface PropertyDetailsProps {
 }
 const PropertyCard = ({ buildingName, propertyType, propertySize }: PropertyDetailsProps) => {
   return (
-    <div className="w-full bg-white rounded-md shadow-md p-6 mb-6">
+    <div className="w-full bg-white rounded-lg border border-[#DBDCDF] p-6 mb-6">
       <h2 className="text-lg font-semibold text-gray-800 mb-2">
-        Customer Details
+        Property Details
       </h2>
       <hr className="border-gray-300 mb-4" />
       <div className="flex text-gray-700">

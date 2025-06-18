@@ -180,7 +180,7 @@ export default function Header() {
           <Button
             onClick={handleAddNewBooking}
             variant="outline"
-            className="flex items-center gap-2 text-[#0F553E] border-[#0F553E] hover:bg-gray-100"
+            className="flex items-center gap-2 text-[#101828] border-[#DBDCDF] hover:bg-gray-100"
           >
             Add a New Booking
           </Button>

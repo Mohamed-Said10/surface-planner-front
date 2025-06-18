@@ -262,8 +262,7 @@ export default function HomePage() {
     </div>
 
       {/* Upcoming Bookings */}
-      <BookingsTable title="Latest Bookings" bookings={upcomingBookings} />
-      <AdminBookingsTable title="Latest Bookings ADMIN" bookings={upcomingBookings} />
+      <AdminBookingsTable title="Latest Bookings" bookings={upcomingBookings} />
       
     </div>
   );

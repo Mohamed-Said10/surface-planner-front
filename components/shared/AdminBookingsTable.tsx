@@ -88,7 +88,7 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
       value={search}
       onChange={(e) => setSearch(e.target.value)}
       placeholder="Search Booking ID, Customer Name, Photographer, Date"
-      className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#0D4835]"
+      className="w-full pl-10 pr-4 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0D4835]"
     />
     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
       <Search className="w-4 h-4" />
@@ -99,7 +99,7 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="text-sm px-3 py-2 border border-gray-300 rounded-md bg-white"
+            className="text-sm px-3 py-2 border border-gray-300 rounded-lg bg-white"
           >
             <option value="">View: All</option>
             {Object.keys(statusColors).map(status => (
@@ -112,7 +112,10 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
       )}
 
       <div className="bg-white rounded-b-lg">
-        <div className="overflow-hidden border border-t-1 border-[#E0E0E0]">
+          <div className={`overflow-hidden border border-t-1 border-[#DBDCDF] rounded-b-lg ${
+              !isSearchable ? "rounded-t-lg" : ""
+            }`}
+          >
           <table className="w-full">
             <thead>
               <tr>

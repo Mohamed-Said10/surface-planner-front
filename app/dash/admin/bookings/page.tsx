@@ -142,7 +142,7 @@ export default function BookingsPage() {
   <button
     onClick={() => setActiveTab('pending')}
     className={`flex-1 px-4 py-2 font-medium text-sm text-center rounded-t ${
-      activeTab === 'pending' ? 'border-b-2 border-black text-black' : 'text-gray-500'
+      activeTab === 'pending' ? 'border-b-2 border-[#2C2F36] text-black' : 'text-gray-500 border-b border-[#DDDDDE]'
     }`}
   >
     Pending Upload
@@ -150,7 +150,7 @@ export default function BookingsPage() {
   <button
     onClick={() => setActiveTab('upcoming')}
     className={`flex-1 px-4 py-2 font-medium text-sm text-center rounded-t ${
-      activeTab === 'upcoming' ? 'border-b-2 border-black text-black' : 'text-gray-500'
+      activeTab === 'upcoming' ? 'border-b-2 border-[#2C2F36] text-black' : 'text-gray-500 border-b border-[#DDDDDE]'
     }`}
   >
     Upcoming
@@ -158,7 +158,7 @@ export default function BookingsPage() {
   <button
     onClick={() => setActiveTab('completed')}
     className={`flex-1 px-4 py-2 font-medium text-sm text-center rounded-t ${
-      activeTab === 'completed' ? 'border-b-2 border-black text-black' : 'text-gray-500'
+      activeTab === 'completed' ? 'border-b-2 border-[#2C2F36] text-black' : 'text-gray-500 border-b border-[#DDDDDE]'
     }`}
   >
     Completed

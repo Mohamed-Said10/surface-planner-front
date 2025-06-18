@@ -7,7 +7,7 @@ interface Props {
 }
 export default function CustomerCard({ firstName, lastName, phoneNumber, email }: Props) {
   return (
-    <div className="bg-white shadow-md rounded-2xl p-6 w-full max-w-full">
+    <div className="bg-white border border-[#DBDCDF] rounded-lg p-6 w-full max-w-full">
       <h2 className="text-lg font-semibold text-gray-800 mb-2">
         Customer Details
       </h2>
