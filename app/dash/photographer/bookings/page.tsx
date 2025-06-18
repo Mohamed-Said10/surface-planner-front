@@ -160,7 +160,7 @@ export default function BookingsPage() {
         </div>
       </div>
 
-      {selectedTab === 'pending' && <BookingsTable title="Pending Upload" bookings={upcomingBookings} />}
+      {selectedTab === 'pending' && <BookingsTable title="Pending Upload" bookings={pendingBookings} />}
       {selectedTab === 'upcoming' && <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />}
       {selectedTab === 'completed' && <BookingsTable title="Completed Bookings" bookings={completedBookings} />}
     </div>

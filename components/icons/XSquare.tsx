@@ -6,7 +6,7 @@ interface IconProps {
   className?: string;
 }
 
-const XCircle: React.FC<IconProps> = ({
+const XSquare: React.FC<IconProps> = ({
   size = 25,
   color = "#CC3A30",
   className
@@ -19,4 +19,4 @@ const XCircle: React.FC<IconProps> = ({
   );
 };
 
-export default XCircle;
+export default XSquare;

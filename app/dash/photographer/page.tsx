@@ -271,7 +271,7 @@ export default function HomePage() {
           </div>
           <div>
             <div className="text-xs text-[#515662]">Active Bookings</div>
-            <div className="text-xl text-[#101828] font-semibold">4</div>
+            <div className="text-xl text-[#101828] font-semibold">{stats.activeBookings}</div>
           </div>
         </div>
         
@@ -281,7 +281,7 @@ export default function HomePage() {
           </div>
           <div>
             <div className="text-xs text-[#515662]">Total Earnings</div>
-            <div className="text-xl text-[#101828] font-semibold">AED 540</div>
+            <div className="text-xl text-[#101828] font-semibold">AED {stats.totalEarnings}</div>
           </div>
         </div>
 
@@ -291,7 +291,7 @@ export default function HomePage() {
           </div>
           <div>
             <div className="text-xs text-[#515662]">Pending Payouts</div>
-            <div className="text-xl text-[#101828] font-semibold">AED 270</div>
+            <div className="text-xl text-[#101828] font-semibold">AED {stats.pendingPayouts}</div>
           </div>
         </div>
 
@@ -301,7 +301,7 @@ export default function HomePage() {
           </div>
           <div>
             <div className="text-xs text-[#515662]">Average Ratings</div>
-            <div className="text-xl text-[#101828] font-semibold">4.7</div>
+            <div className="text-xl text-[#101828] font-semibold">{stats.averageRating}</div>
           </div>
         </div>
       </div>

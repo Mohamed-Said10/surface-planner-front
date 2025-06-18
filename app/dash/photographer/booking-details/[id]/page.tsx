@@ -3,9 +3,6 @@ import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, Calendar, X, Send, NotebookText } from "lucide-react";
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import Payement_Details from "@/components/shared/payment-details";
 import UploadWork from "@/components/shared/upload-work";
 import { CheckCircle, XSquare } from '@/components/icons';
 
@@ -103,6 +100,13 @@ export default function BookingDetailsPage() {
     }
   ]);
   const [newMessage, setNewMessage] = useState("");
+  const [uploadProgress, setUploadProgress] = useState({
+    'Unedited Photos': false,
+    'Edited Photos': false,
+    'Videos': false,
+    '360° Virtual Tour': false,
+    'Floor Plan & Room Staging': false
+  });
 
   const requestInProgress = useRef(false);
 
@@ -187,59 +191,80 @@ export default function BookingDetailsPage() {
 
   // Status steps based on booking status
   const getStatusSteps = () => {
-    if (!booking) return [];
-    
-    const getStepStatus = (stepName: string) => {
-      switch (stepName) {
-        case 'Booking Requested':
-          return { completed: true, date: "May 5, 5:54 AM" };
-        case 'Photographer Assigned':
-          return { completed: isAccepted, date: isAccepted ? "May 5, 8:54 AM" : "Pending" };
-        case 'Shoot':
-          return { 
-            completed: shootStatus === 'completed' || shootStatus === 'uploading',
-            inProgress: shootStatus === 'shooting',
-            upcoming: shootStatus === 'ready',
-            date: shootStatus === 'completed' || shootStatus === 'uploading' ? "Completed" : 
-                  shootStatus === 'shooting' ? "In Progress" :
-                  shootStatus === 'ready' ? "Ready to Start" : "Starts Soon"
-          };
-        case 'Editing':
-          return { 
-            completed: shootStatus === 'uploading',
-            inProgress: shootStatus === 'completed',
-            date: shootStatus === 'uploading' ? "In Progress" : "Not Started Yet"
-          };
-        case 'Order Delivery':
-          return { completed: false, date: "Expected May 8, 2025" };
-        default:
-          return { completed: false, date: "Pending" };
-      }
-    };
-    
-    return [
-      { 
-        label: "Booking Requested", 
-        ...getStepStatus('Booking Requested')
-      },
-      { 
-        label: "Photographer Assigned", 
-        ...getStepStatus('Photographer Assigned')
-      },
-      { 
-        label: "Shoot", 
-        ...getStepStatus('Shoot')
-      },
-      { 
-        label: "Editing", 
-        ...getStepStatus('Editing')
-      },
-      {
-        label: "Order Delivery",
-        ...getStepStatus('Order Delivery')
-      }
-    ];
+  if (!booking) return [];
+  
+  // Vérifier si tous les fichiers sont uploadés
+  const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
+  
+  const getStepStatus = (stepName: string) => {
+    switch (stepName) {
+      case 'Booking Requested':
+        return { completed: true, date: "May 5, 5:54 AM" };
+      case 'Photographer Assigned':
+        return { 
+          completed: isAccepted || allFilesUploaded, 
+          date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending" 
+        };
+      case 'Shoot':
+        return { 
+          completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
+          inProgress: shootStatus === 'shooting' && !allFilesUploaded,
+          upcoming: shootStatus === 'ready' && !allFilesUploaded,
+          date: allFilesUploaded 
+            ? "Completed" 
+            : shootStatus === 'completed' || shootStatus === 'uploading' 
+              ? "Completed" 
+              : shootStatus === 'shooting' 
+                ? "In Progress" 
+                : shootStatus === 'ready' 
+                  ? "Ready to Start" 
+                  : "Starts Soon"
+        };
+      case 'Editing':
+        const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
+        
+        return { 
+          completed: allFilesUploaded,
+          inProgress: hasUploadedFiles && !allFilesUploaded,
+          date: allFilesUploaded 
+            ? "All Files Uploaded - Complete"
+            : hasUploadedFiles 
+              ? "Upload in Progress"
+              : "Not Started Yet"
+        };
+      case 'Order Delivery':
+        return { 
+          completed: allFilesUploaded, 
+          date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025" 
+        };
+      default:
+        return { completed: false, date: "Pending" };
+    }
   };
+  
+  return [
+    { 
+      label: "Booking Requested", 
+      ...getStepStatus('Booking Requested')
+    },
+    { 
+      label: "Photographer Assigned", 
+      ...getStepStatus('Photographer Assigned')
+    },
+    { 
+      label: "Shoot", 
+      ...getStepStatus('Shoot')
+    },
+    { 
+      label: "Editing", 
+      ...getStepStatus('Editing')
+    },
+    {
+      label: "Order Delivery",
+      ...getStepStatus('Order Delivery')
+    }
+  ];
+};
 
   // Message handlers
   const handleSendMessage = () => {
@@ -289,6 +314,13 @@ export default function BookingDetailsPage() {
     setIsCancelModalOpen(false);
   };
 
+  const handleUploadProgress = (section: string, hasFiles: boolean) => {
+    setUploadProgress(prev => {
+      const newProgress = { ...prev, [section]: hasFiles };
+      return newProgress;
+    });
+  };
+
   if (loading) {
     return (
       <div className="p-4 flex items-center justify-center h-64">
@@ -336,6 +368,8 @@ export default function BookingDetailsPage() {
     ? 'Upcoming' 
     : booking.status.replace(/_/g, ' ').toLowerCase();
   };
+
+  console.log('test booking', booking)
 
   // Mock photographer data when accepted
   const getPhotographerName = () => {
@@ -448,7 +482,12 @@ export default function BookingDetailsPage() {
                   {index < statusSteps.length - 1 && (
                     <div
                       className={`absolute top-3 left-1/2 h-0.5 ${
-                        step.completed ? 'bg-[#0F9C5A]' : 'bg-gray-300'
+                        // step.completed ? 'bg-[#0F9C5A]' : 'bg-gray-300'
+                        step.inProgress 
+                        ? 'bg-[#F79009]' 
+                        : step.completed 
+                          ? 'bg-[#0F9C5A]' 
+                          : 'bg-gray-300'
                       }`}
                       style={{
                         height: '3px',
@@ -590,7 +629,7 @@ export default function BookingDetailsPage() {
               </div>
             </div>
           ) : (
-            <UploadWork />
+            <UploadWork onUploadProgress={handleUploadProgress} />
           )}
         </>
       )}
