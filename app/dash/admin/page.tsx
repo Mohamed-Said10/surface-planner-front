@@ -3,6 +3,8 @@ import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BookingsTable from '@/components/shared/bookingsTable';
 import AdminBookingsTable from '@/components/shared/AdminBookingsTable';
+import BookingCalendar from '@/components/shared/BookingCalendar';
+
 import { DollarSign, DollarCircle, CalendarDays, Star, CalendarDaysCalculated , Clock} from '@/components/icons';
 
 // Import the Booking interface from your BookingsPage component
@@ -219,7 +221,7 @@ export default function HomePage() {
   <div className="p-4 space-y-4">
 
     {/* Stats */}
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
       <div className="bg-white rounded-lg border border-[#DBDCDF] p-4 flex items-center gap-3">
         <div className="p-3 border border-[#DBDCDF] rounded-md">
           <CalendarDays color="#0D824B" size={25} />
@@ -262,6 +264,7 @@ export default function HomePage() {
     </div>
 
       {/* Upcoming Bookings */}
+      <BookingCalendar bookings={bookings}/>
       <AdminBookingsTable title="Latest Bookings" bookings={upcomingBookings} />
       
     </div>
