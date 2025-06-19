@@ -16,6 +16,7 @@ interface UploadSectionProps {
   acceptedTypes?: string[]
   maxSize?: number // in MB
   onFileUpload?: (files: FileList) => void
+  onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
 
 function UploadSection({ 
@@ -23,7 +24,8 @@ function UploadSection({
   acceptedFormats = "Images, Videos, Documents", 
   acceptedTypes = ["image/*", "video/*", ".pdf", ".doc", ".docx"],
   maxSize = 10,
-  onFileUpload 
+  onFileUpload,
+  onUploadProgress
 }: UploadSectionProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -86,7 +88,16 @@ function UploadSection({
         })
       }
 
-      setUploadedFiles(prev => [...prev, ...newUploadedFiles])
+      setUploadedFiles(prev => {
+        const newFiles = [...prev, ...newUploadedFiles];
+        
+        // Notifier le parent du changement
+        if (onUploadProgress) {
+          onUploadProgress(title, newFiles.length > 0);
+        }
+        
+        return newFiles;
+      });
       
       if (onFileUpload) {
         const fileList = new DataTransfer()
@@ -136,7 +147,16 @@ function UploadSection({
   }
 
   const removeFile = (id: string) => {
-    setUploadedFiles(prev => prev.filter(f => f.id !== id))
+    setUploadedFiles(prev => {
+      const filtered = prev.filter(f => f.id !== id);
+      
+      // Notifier le parent du changement
+      if (onUploadProgress) {
+        onUploadProgress(title, filtered.length > 0);
+      }
+      
+      return filtered;
+    });
   }
 
   const getFileIcon = (file: File) => {
@@ -184,10 +204,10 @@ function UploadSection({
             {uploadedFiles.length === 0 ? (
               <div className="flex flex-col items-center text-center">
                 <Upload className={`h-8 w-8 mb-3 transition-colors ${
-                  isDragOver ? "text-blue-500" : "text-gray-400"
+                  isDragOver ? "text-blue-500" : "text-[#0F553E]"
                 }`} />
                 <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium text-gray-900">Click to upload</span> or drag and drop
+                  <span className="font-medium text-[#0F553E]">Click to upload</span> or drag and drop
                 </p>
                 <p className="text-xs text-gray-500">{acceptedFormats}</p>
                 <p className="text-xs text-gray-400 mt-1">Max size: {maxSize}MB</p>
@@ -291,9 +311,10 @@ function UploadSection({
 
 interface UploadWorkProps {
   onFileUpload?: (section: string, files: FileList) => void
+  onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
 
-export default function UploadWork({ onFileUpload }: UploadWorkProps) {
+export default function UploadWork({ onFileUpload, onUploadProgress }: UploadWorkProps) {
   const handleSectionUpload = (section: string) => (files: FileList) => {
     console.log(`Files uploaded to ${section}:`, files)
     if (onFileUpload) {
@@ -340,7 +361,7 @@ export default function UploadWork({ onFileUpload }: UploadWorkProps) {
   ]
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
       <h2 className="text-lg font-semibold mb-3">Upload Work</h2>
       <div className=" mb-3 mt-3"/>
         <div className="dvideligne border-b mb-3 mt-3"/>
@@ -354,6 +375,7 @@ export default function UploadWork({ onFileUpload }: UploadWorkProps) {
             acceptedTypes={section.acceptedTypes}
             maxSize={section.maxSize}
             onFileUpload={section.onUpload}
+            onUploadProgress={onUploadProgress}
           />
         ))}
       </div>

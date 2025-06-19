@@ -19,3 +19,7 @@ export { default as Search } from './Search';
 export { default as Support } from './Support';
 export { default as Completedprojects } from './Completedprojects';
 export { default as CompletedprojectsFull } from './CompletedprojectsFull';
+export { default as ActiveJobsLabel } from './ActiveJobsLabel';
+export { default as CheckCircle } from './CheckCircle';
+export { default as XSquare } from './XSquare';
+export { default as ArrowLeft } from './ArrowLeft';
