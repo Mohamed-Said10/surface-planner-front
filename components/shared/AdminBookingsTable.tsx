@@ -119,22 +119,22 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
           <table className="w-full">
             <thead>
               <tr>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   ID
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   Booking
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   Package
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   Status
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   Customer Name
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                <th className="text-left py-3 px-4 text-sm font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#DBDCDF]">
                   Photographer
                 </th>
               </tr>
@@ -146,10 +146,10 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
                   className={`border-t border-[#E0E0E0] hover:bg-gray-50 cursor-pointer`}
                   onClick={() => handleBookingClick(booking.id)}
                 >
-                  <td className={`py-4 px-4 text-sm font-medium border-r border-[#E0E0E0] ${index === bookings.length - 1 ? "rounded-bl-lg" : ""}`}>
+                  <td className={`py-4 px-4 text-sm font-medium border-r border-[#DBDCDF] ${index === bookings.length - 1 ? "rounded-bl-lg" : ""}`}>
                     {booking.id.slice(0, 8)}...
                   </td>
-                  <td className="py-4 px-4 text-sm border-r border-[#E0E0E0]">
+                  <td className="py-4 px-4 text-sm border-r border-[#DBDCDF]">
                     <span className="underline text-[#0D4835] hover:text-[#0D4835]/80 block">
                       {booking.buildingName}
                     </span>
@@ -162,15 +162,15 @@ const AdminBookingsTable: React.FC<AdminBookingsTableProps> = ({ title, bookings
                       at {booking.timeSlot}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-900 border-r border-[#E0E0E0]">
+                  <td className="py-4 px-4 text-sm text-gray-900 border-r border-[#DBDCDF]">
                     {booking.package.name.replace(/ ?package/i, '')}
                   </td>
-                  <td className="py-4 px-4 text-sm border-r border-[#E0E0E0]">
+                  <td className="py-4 px-4 text-sm border-r border-[#DBDCDF]">
                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusColors[booking.status] || "bg-gray-100 text-gray-800"}`}>
                       {formatStatus(booking.status)}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-900 border-r border-[#E0E0E0]">
+                  <td className="py-4 px-4 text-sm text-gray-900 border-r border-[#DBDCDF]">
                     {booking.client.firstname} {booking.client.lastname}
                   </td>
                   <td className={`py-4 px-4 text-sm text-gray-900 ${index === bookings.length - 1 ? "rounded-br-lg" : ""}`}>

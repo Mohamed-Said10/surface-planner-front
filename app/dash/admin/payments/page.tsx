@@ -1,7 +1,9 @@
 "use client";
 import React, { useState }from "react";
-import { AverageCoins, XCircle, DollarSign, Download} from '@/components/icons';
+import { Checkmark, Hourglass, DollarSign, Download} from '@/components/icons';
 import WithdrawEarningsModal from '@/components/modals/WithdrawEarningsModal';
+import EarningsBarChart from '@/components/shared/EarningsBarChart';
+
 
 
 interface Transaction {
@@ -79,9 +81,10 @@ export default function PaymentsPage() {
       {/* <h1 className="text-2xl font-bold mb-6">Payments</h1> */}
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+      <div className="flex gap-6 mb-8 h-[318px]">
+        <div className="w-1/3 flex flex-col gap-4 h-full">
         {/* Total Earnings Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3 flex-1">
             <div className="p-3 border border-[#DBDCDF] rounded-md">
                 <DollarSign size={25} />
             </div>
@@ -92,26 +95,39 @@ export default function PaymentsPage() {
         </div>
 
         {/* Average Earning per Booking Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3 flex-1">
             <div className="p-3 border border-[#DBDCDF] rounded-md">
-                <AverageCoins size={25} />
+                <Checkmark size={25} />
             </div>
             <div>
-                <div className="text-xs text-[#515662]">Avg. Earning per Booking</div>
-                <div className="text-xl font-semibold text-[#101828]">AED 127.5</div>
+                <div className="text-xs text-[#515662]">Completed Bookings</div>
+                <div className="text-xl font-semibold text-[#101828]">18</div>
             </div>
         </div>
 
         {/* Failed Transactions Card */}
-        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3">
+        <div className="bg-white border border-[#DBDCDF] rounded-lg p-4 flex items-center gap-3 flex-1">
             <div className="p-3 border border-[#DBDCDF] rounded-md">
-                <XCircle size={25} />
+                <Hourglass size={25} />
             </div>
             <div>
-                <div className="text-xs text-[#515662]">Failed Transactions</div>
-                <div className="text-xl font-semibold text-[#101828]">AED 4,000</div>
+                <div className="text-xs text-[#515662]">Booking in Progress</div>
+                <div className="text-xl font-semibold text-[#101828]">4</div>
             </div>
         </div>
+        </div>
+        <div className="w-2/3 bg-white border border-[#DBDCDF] rounded-lg pr-4 pt-1 mb-4 h-full">
+        <div className="flex justify-between items-center my-6">
+            <h2 className="text-lg font-semibold text-[#101828] px-4">Earnings</h2>
+            <select className="border border-gray-300 rounded-lg pl-3 pr-12 py-1 text-sm text-gray-700 focus:outline-none focus:ring-0">
+            <option>2024</option>
+            <option>2023</option>
+            <option>2022</option>
+            </select>
+        </div>
+        <EarningsBarChart />
+        </div>
+        
       </div>
 
       {/* Recent Transactions */}

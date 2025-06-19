@@ -60,6 +60,18 @@ const PAGE_CONFIG = {
     subtitle: "",
     showBookButton: false,
     showBookButtonAdmin: true // button for admin/bookings only based on Figma.
+  },
+  '/dash/admin/photographers': {
+    title: 'Photographers Management',
+    subtitle: "",
+    showBookButton: false,
+    showBookButtonAdmin: false 
+  },
+  '/dash/admin/payments': {
+    title: 'Payments',
+    subtitle: "",
+    showBookButton: false,
+    showBookButtonAdmin: false 
   }
 } as const;
 
@@ -106,7 +118,17 @@ export default function Header() {
         showBackButton: true
       };
     }
+    const photographerDetailsMatch = pathname.match(/^\/dash\/(photographer|admin)\/photographers-portfolio\/(.+)$/);
 
+    if (photographerDetailsMatch) {
+      return {
+        title: 'Photographers Profile',
+        subtitle: '',
+        showBookButton: false,
+        showBookButtonAdmin: false,
+        showBackButton: true
+      };
+    }
     // Utiliser la configuration pour les autres pages
     const config = PAGE_CONFIG[pathname as keyof typeof PAGE_CONFIG];
     

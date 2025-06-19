@@ -6,8 +6,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { UserRole } from "@/components/types/user";
 import { cn } from "@/lib/utils";
-import { DollarCircle, DollarCircleFull, CalendarDays, CalendarDaysFull, Home, HomeFull, Completedprojects, CompletedprojectsFull, Settings, Support } from '@/components/icons';
+import { DollarCircle, DollarCircleFull,CameraTool,CameraToolFull, CalendarDays, CalendarDaysFull, Home, HomeFull, Completedprojects, CompletedprojectsFull, Settings, Support } from '@/components/icons';
 import { DashIcon } from "@radix-ui/react-icons";
+
 
 const ROLE_PATHS = {
   CLIENT: {
@@ -23,7 +24,10 @@ const ROLE_PATHS = {
   ADMIN: {
     base: '/dash/admin',
     bookings: '/dash/admin/bookings',
-    projects: '/dash/admin/completed'
+    projects: '/dash/admin/completed',
+    photographers: '/dash/admin/photographers',
+    payments: '/dash/admin/payments',
+    support: '/dash/admin/support_tickets',
   }
 } as const;
 
@@ -43,7 +47,8 @@ export default function Sidebar() {
 
   // const userRole = (session?.user?.role as UserRole); 
   const userRole = 'ADMIN' as UserRole;
-  const { base, bookings, projects } = getRolePaths(userRole);
+  const { base, bookings, projects, photographers, support  } = getRolePaths(userRole);
+  const activePath = userRole === 'ADMIN' ? photographers : projects;
 
   // Helper functions
   const truncateEmail = (email: string | null | undefined) => {
@@ -150,12 +155,13 @@ export default function Sidebar() {
           )}
           {userRole === 'ADMIN' ? 'Bookings' : 'My Bookings'}
         </button>
-
+          
         <button
-          onClick={() => handleNavigation(projects)}
+          onClick={() => handleNavigation(userRole === 'ADMIN' ? photographers : projects)}
+          
           className={cn(
             "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
-            isActive(projects)
+            isActive(activePath)
               ? "bg-gray-100 text-[#0F553E]"
               : "text-[#646973] hover:bg-gray-100"
           )}
@@ -169,9 +175,18 @@ export default function Sidebar() {
               )}
               Payments
             </>
+          ): userRole === 'ADMIN' ? (
+            <>
+              {isActive(photographers) ? (
+                <CameraToolFull  className="h-5 w-5 mr-3" />
+              ) : (
+                <CameraTool className="h-5 w-5 mr-3" />
+              )}
+              Photographers
+            </>
           ) : (
             <>
-              {isActive(projects) ? (
+              {isActive(activePath) ? (
                 <CompletedprojectsFull className="h-5 w-5 mr-3" />
               ) : (
                 <Completedprojects className="h-5 w-5 mr-3" />
@@ -180,6 +195,42 @@ export default function Sidebar() {
             </>
           )}
         </button>
+        {userRole === 'ADMIN' && (
+  <button
+    onClick={() => handleNavigation(ROLE_PATHS.ADMIN.payments)}
+    className={cn(
+      "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
+      isActive(ROLE_PATHS.ADMIN.payments)
+        ? "bg-gray-100 text-[#0F553E]"
+        : "text-[#646973] hover:bg-gray-100"
+    )}
+  >
+    {isActive(ROLE_PATHS.ADMIN.payments) ? (
+      <DollarCircleFull className="h-5 w-5 mr-3" />
+    ) : (
+      <DollarCircle className="h-5 w-5 mr-3" />
+    )}
+    Payments
+  </button>
+)}
+{userRole === "ADMIN" && (
+  <button
+    onClick={() => handleNavigation(ROLE_PATHS.ADMIN.support)}
+    className={cn(
+      "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
+      isActive(ROLE_PATHS.ADMIN.support)
+        ? "bg-gray-100 text-[#0F553E]"
+        : "text-[#646973] hover:bg-gray-100"
+    )}
+  >
+    {isActive(ROLE_PATHS.ADMIN.support) ? (
+      <Support className="h-5 w-5 mr-3" />
+    ) : (
+      <Support className="h-5 w-5 mr-3" />
+    )}
+    Support & Tickets
+  </button>
+)}
       </nav>
 
       <div className="absolute bottom-0 w-64 border-t">
