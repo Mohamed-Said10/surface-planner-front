@@ -31,7 +31,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="flex justify-between">
@@ -64,7 +64,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
                              displayError.includes('You haven\'t made any bookings yet');
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <div className={`text-center p-4 rounded-lg ${
           isNoBookingsError ? 'bg-[#F0F7F4] text-[#0D4835]' : 'bg-red-50 text-red-800'
         }`}>
@@ -94,7 +94,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   if (!bookingStatus) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <div className="text-center p-4 text-gray-500">
           <div role="status">
     <svg aria-hidden="true" className="inline w-8 h-8 text-gray-200 animate-spin dark:text-gray-600 fill-gray-600 dark:fill-gray-300" viewBox="0 0 100 101" fill="none" xmlns="http://www.w3.org/2000/svg">

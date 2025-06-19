@@ -23,3 +23,11 @@ export { default as ActiveJobsLabel } from './ActiveJobsLabel';
 export { default as CheckCircle } from './CheckCircle';
 export { default as XSquare } from './XSquare';
 export { default as ArrowLeft } from './ArrowLeft';
+
+export { default as Clock } from './Clock';
+export { default as CameraTool } from './CameraTool';
+export { default as CameraToolFull } from './CameraToolFull';
+export { default as Notes } from './Notes';
+export { default as StarFull } from './StarFull';
+export { default as Checkmark } from './Checkmark';
+export { default as Hourglass } from './Hourglass';
