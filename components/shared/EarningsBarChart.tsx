@@ -24,7 +24,7 @@ const data = [
 ];
 
 export const EarningsBarChart = () => (
-  <ResponsiveContainer width="100%" height={260}>
+  <ResponsiveContainer width="100%" height="100%">
     <BarChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}> 
       <CartesianGrid vertical={false} stroke="#DBDCDF" />
 
@@ -36,8 +36,8 @@ export const EarningsBarChart = () => (
       />
       <YAxis
         domain={[0, 5000]}
-        ticks={[1000, 2000, 3000, 4000, 5000]}
-        tickFormatter={(value) => `${value / 1000}k`}
+        ticks={[0,1000, 2000, 3000, 4000, 5000]}
+        tickFormatter={(value) => (value === 0 ? '0' : `${value / 1000}k`)}
         tick={{ fontSize: 12 }}
         axisLine={false}
         tickLine={false}
