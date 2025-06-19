@@ -269,48 +269,54 @@ export default function HomePage() {
       
       <div className="px-4">
         <div className="divide-y divide-[#F1F1F2]">
-          {upcomingBookings.map((booking, index) => {
-            const isRemoving = removingBookings.has(booking.id);
-            
-            return (
-              <div 
-                key={booking.id} 
-                className={`flex items-center justify-between py-4 transition-all duration-700 ease-in-out ${
-                  isRemoving 
-                    ? 'opacity-0 transform -translate-x-full max-h-0 py-0 overflow-hidden' 
-                    : 'opacity-100 transform translate-x-0 max-h-24'
-                }`}
-                style={{
-                  transitionProperty: 'opacity, transform, max-height, padding',
-                }}
-              >
-                <div className="flex-1">
-                  <button className="text-left">
-                    <p className="text-sm text-[#0D4835] underline hover:text-gray-600 capitalize">
-                      {booking.street}
+          {upcomingBookings.length === 0 ? (
+            <div className="text-center text-gray-400 text-base py-20 text-xl">
+              No bookings available.
+            </div>
+          ) : (
+            upcomingBookings.map((booking, index) => {
+              const isRemoving = removingBookings.has(booking.id);
+
+              return (
+                <div 
+                  key={booking.id}
+                  className={`flex items-center justify-between py-4 transition-all duration-700 ease-in-out ${
+                    isRemoving 
+                      ? 'opacity-0 transform -translate-x-full max-h-0 py-0 overflow-hidden' 
+                      : 'opacity-100 transform translate-x-0 max-h-24'
+                  }`}
+                  style={{
+                    transitionProperty: 'opacity, transform, max-height, padding',
+                  }}
+                >
+                  <div className="flex-1">
+                    <button className="text-left">
+                      <p className="text-sm text-[#0D4835] underline hover:text-gray-600 capitalize">
+                        {booking.street}
+                      </p>
+                    </button>
+                    <p className="text-xs mt-1 text-[#646973]">
+                      {booking.appointmentDate}
                     </p>
-                  </button>
-                  <p className="text-xs mt-1 text-[#646973]">
-                    {booking.appointmentDate}
-                  </p>
+                  </div>
+                  <div className="flex gap-2 ml-4">
+                    <button 
+                      onClick={() => handleRejectBooking(booking.id)}
+                      className="px-4 py-2 text-sm font-medium text-[#AA3028] bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF]"
+                    >
+                      Reject
+                    </button>
+                    <button 
+                      onClick={() => handleAcceptBooking(booking.id)}
+                      className="px-4 py-2 text-sm font-medium text-white bg-[#12B76A] hover:bg-green-700 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF]"
+                    >
+                      Accept
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-2 ml-4">
-                  <button 
-                    onClick={() => handleRejectBooking(booking.id)}
-                    className="px-4 py-2 text-sm font-medium text-[#AA3028] bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF]"
-                  >
-                    Reject
-                  </button>
-                  <button 
-                    onClick={() => handleAcceptBooking(booking.id)}
-                    className="px-4 py-2 text-sm font-medium text-white bg-[#12B76A] hover:bg-green-700 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF]"
-                  >
-                    Accept
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
@@ -360,7 +366,7 @@ export default function HomePage() {
       
     </div>
 
-    <BookingCalendar bookings={bookingsCal} />
+    <BookingCalendar bookings={bookings}/>
 
     {/* Upcoming Bookings */}
     <BookingsTable title="Upcoming Bookings" bookings={upcomingBookings} />
