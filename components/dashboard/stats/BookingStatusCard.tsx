@@ -17,6 +17,7 @@ interface BookingStatusCardProps {
   bookingStatus: BookingStatus | null;
   loading: boolean;
   error: string | null;
+  shortId: string;  // Short ID for the booking, used in the header   
   onRetry?: () => void;
 }
 
@@ -24,9 +25,9 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
   bookingStatus,
   loading,
   error,
+  shortId,
   onRetry
 }) => {
-  console.log("BookingStatusCard props:", { loading, error, bookingStatus });
 
   if (loading) {
     return (
@@ -111,7 +112,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
     <div>
       <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <h2 className="text-sm font-semibold mb-6">
-          Booking #{bookingStatus.id.substring(0, 8)} Status
+          Booking #{shortId} Status
         </h2>
         <div className="relative flex justify-between">
           {bookingStatus.steps.map((step, index) => {

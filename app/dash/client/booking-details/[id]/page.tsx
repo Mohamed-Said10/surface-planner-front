@@ -42,6 +42,7 @@ interface Booking extends BookingType {
   phoneNumber: string
   email: string
   notes: string | null
+  shortId: string
 }
 
 interface Message {
@@ -142,22 +143,22 @@ export default function BookingDetailsPage() {
 
   // Fetch booking details
   useEffect(() => {
+
     const fetchBookingDetails = async () => {
       if (requestInProgress.current) return
       requestInProgress.current = true
 
       try {
         setLoading(true)
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings?id=${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
           credentials: "include",
         })
 
         if (!response.ok) throw new Error("Failed to fetch booking")
 
         const data = await response.json()
-        if (data.bookings.length > 0) {
-          setBooking(data.bookings[0])
-        }
+        setBooking(data)
+        console.log("Booking details fetched:", data) 
       } catch (error) {
         console.error("Error fetching booking:", error)
       } finally {
@@ -228,6 +229,7 @@ export default function BookingDetailsPage() {
   return (
     <div className="p-4 space-y-4">
       <BookingStatusCard
+        shortId={booking.shortId}
         bookingStatus={bookingStatus}
         loading={statusLoading}
         error={statusError}

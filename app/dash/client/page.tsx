@@ -28,6 +28,7 @@ export default function HomePage() {
   const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
     null
   );
+  const [shortIdStatus, setShortIdStatus] = useState<string | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
   const [statusError, setStatusError] = useState<string | null>(null);
 
@@ -54,6 +55,7 @@ export default function HomePage() {
       }
 
       const data = await response.json();
+
       if (!response.ok)
         throw new Error(data.error || "Failed to fetch bookings");
 
@@ -69,7 +71,6 @@ export default function HomePage() {
     ignoreResponse.current = false;
 
     try {
-      console.log("Starting fetch request");
       setStatusLoading(true);
       setStatusError(null);
 
@@ -90,7 +91,7 @@ export default function HomePage() {
       }
 
       const data = await response.json();
-
+      setShortIdStatus(data.shortId);
       if (ignoreResponse.current) return;
 
       if (!data?.bookingId) {
@@ -173,6 +174,7 @@ export default function HomePage() {
   return (
     <div className="p-4 space-y-4">
       <BookingStatusCard
+        shortId={shortIdStatus || ""}
         bookingStatus={bookingStatus}
         loading={statusLoading}
         error={statusError}
@@ -238,16 +240,26 @@ export default function HomePage() {
         <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
           <div className="flex items-center text-sm text-[#515662]">
             <span className="truncate">{booking.package.name}</span>
-            {booking.addOns.length > 0 && (
-              <span className="flex items-center gap-1 ml-1 shrink-0">
-                <span className="relative text-xl mb-1 font-extralight">+</span>
-                {booking.addOns.map((addon: any, index: any) => {
-                  if (addon.name.includes('Photo')) return <Photo key={index} />;
-                  if (addon.name.includes('Video')) return <Video key={index} />;
-                  if (addon.name.includes('Virtual')) return <Virtual key={index} />;
-                })}
-              </span>
-            )}
+           {booking.addOns.length > 0 && (
+  <span className="flex items-center gap-1 ml-1 shrink-0">
+    <span className="relative text-xl mb-1 font-extralight">+</span>
+    {(() => {
+      const names = booking.addOns.map((addon: any) => addon.name);
+      const showPhoto = names.some((name:string) => name.includes('Photo'));
+      const showVideo = names.some((name:string) => name.includes('Video'));
+      const showVirtual = names.some((name:string) => name.includes('Virtual'));
+
+      return (
+        <>
+          {showPhoto && <Photo />}
+          {showVideo && <Video />}
+          {showVirtual && <Virtual />}
+        </>
+      );
+    })()}
+  </span>
+)}
+
           </div>
         </td>
         <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">

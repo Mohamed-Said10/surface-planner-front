@@ -41,7 +41,7 @@ export default function PropertyDetailsStep({ formData, updateFormData, onNext }
           onChange={(e) => {
             updateFormData({ ...formData, propertyType: e.target.value });setSelectedType(e.target.value); setAddressInputs(FIELDS_PER_TYPE[e.target.value as keyof typeof FIELDS_PER_TYPE]); console.log(addressInputs);
           }}
-          required
+          required 
           className="bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
           <option value="" disabled>Select Property Type</option>
           <option value="1">Apartment</option>

@@ -18,6 +18,7 @@ export interface StatusHistory {
 
 export interface BookingStatus {
   id: string
+  shortId?: string // Optional for easier display
   steps: {
     label: string
     date: string
