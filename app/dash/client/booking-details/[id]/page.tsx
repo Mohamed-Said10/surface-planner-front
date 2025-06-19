@@ -238,8 +238,8 @@ export default function BookingDetailsPage() {
 
 
       {/* Package Details - Dynamic */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-start gap-4 mb-4">
+      <div className="bg-white rounded-lg border border-[#E0E0E0] p-6 ">
+        <div className="flex items-start gap-4 mb-4 ">
           <div className="p-2 bg-orange-100 rounded-lg">
             <div className="w-8 h-8 text-orange-600 justify-center flex items-center">💎</div>
           </div>

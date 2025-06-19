@@ -1,12 +1,12 @@
-'use client';
+"use client";
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { RefreshCw } from "lucide-react";
 import Link from "next/link";
-import { Search } from '@/components/icons';
-import { Photo, Video, Virtual } from '@/components/icons/addOns';
+import { Search } from "@/components/icons";
+import { Photo, Video, Virtual } from "@/components/icons/addOns";
 
 interface Booking {
   id: string;
@@ -38,36 +38,38 @@ export default function BookingsPage() {
   const requestInProgress = useRef(false);
 
   const fetchBookings = async () => {
-    
     if (requestInProgress.current) return; // Skip if already fetching
     requestInProgress.current = true;
 
     try {
       setLoading(true);
       setError(null);
-      
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings`,
+        {
+          credentials: "include",
+          headers: {
+            "Content-Type": "application/json",
+          },
         }
-      });
-      
+      );
+
       if (!response.ok) {
-        throw new Error('Failed to fetch bookings');
+        throw new Error("Failed to fetch bookings");
       }
-      
+
       const data = await response.json();
       setBookings(data.bookings);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load bookings');
+      setError(err instanceof Error ? err.message : "Failed to load bookings");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    if (status === 'authenticated') {
+    if (status === "authenticated") {
       fetchBookings();
     }
   }, [status]);
@@ -93,32 +95,34 @@ export default function BookingsPage() {
   };
 
   const formatStatus = (status: string) => {
-    return status.toLowerCase()
-      .split('_')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ');
+    return status
+      .toLowerCase()
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   };
 
   const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+    const options: Intl.DateTimeFormatOptions = {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     };
-    return new Date(dateString).toLocaleDateString('en-US', options);
+    return new Date(dateString).toLocaleDateString("en-US", options);
   };
 
-  const filteredBookings = bookings.filter(booking => {
+  const filteredBookings = bookings.filter((booking) => {
     const searchLower = searchTerm.toLowerCase();
     return (
       booking.buildingName?.toLowerCase().includes(searchLower) ||
       booking.street.toLowerCase().includes(searchLower) ||
       booking.package.name.toLowerCase().includes(searchLower) ||
-      (booking.photographer && 
+      (booking.photographer &&
         `${booking.photographer.firstname} ${booking.photographer.lastname}`
-          .toLowerCase().includes(searchLower)) ||
+          .toLowerCase()
+          .includes(searchLower)) ||
       booking.status.toLowerCase().includes(searchLower)
     );
   });
@@ -137,17 +141,13 @@ export default function BookingsPage() {
         <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
-        <Button 
-          onClick={fetchBookings}
-          variant="outline"
-        >
+        <Button onClick={fetchBookings} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
           Retry
         </Button>
       </div>
     );
   }
-
 
   return (
     <div className="p-4">
@@ -165,7 +165,7 @@ export default function BookingsPage() {
               className="max-w-md pl-10 placeholder:text-base placeholder:text-[#93979E] focus-visible:ring-0 focus-visible:ring-offset-0 border-0 shadow-none"
             />
           </div>
-          <Button 
+          <Button
             onClick={fetchBookings}
             variant="outline"
             size="sm"
@@ -180,11 +180,21 @@ export default function BookingsPage() {
           <table className="w-full">
             <thead>
               <tr className="bg-gray-50">
-                <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Booking</th>
-                <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Package</th>
-                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Price</th>
-                <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Photographer</th>
-                <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">Status</th>
+                <th className="w-[38%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                  Booking
+                </th>
+                <th className="w-[18%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                  Package
+                </th>
+                <th className="w-[15%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                  Price
+                </th>
+                <th className="w-[17%] px-6 py-3 text-left text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                  Photographer
+                </th>
+                <th className="w-[12%] px-6 py-3 text-center text-xs font-medium text-[#343B48] bg-[#F5F6F6] border-r border-[#E0E0E0]">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -192,7 +202,8 @@ export default function BookingsPage() {
                 filteredBookings.map((booking) => (
                   <tr key={booking.id} className="border-t border-[#E0E0E0]">
                     <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
-                      <Link href={`/dash/client/booking-details/${booking.id}`}
+                      <Link
+                        href={`/dash/client/booking-details/${booking.id}`}
                         className="text-sm underline text-[#0D4835]"
                       >
                         {booking.buildingName}, {booking.street}
@@ -204,34 +215,51 @@ export default function BookingsPage() {
                     <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
                       <div className="flex items-center text-sm text-[#515662]">
                         <span className="truncate">{booking.package.name}</span>
-                        {booking.addOns.length > 0 && (
-                          <span className="flex items-center gap-1 ml-1 shrink-0">
-                            <span className="relative text-xl mb-1 font-extralight">+</span>
-                            {booking.addOns.map((addon: any, index: any) => {
-                              if (addon.name.includes('Photo')) return <Photo key={index} />;
-                              if (addon.name.includes('Video')) return <Video key={index} />;
-                              if (addon.name.includes('Virtual')) return <Virtual key={index} />;
-                            })}
-                          </span>
-                        )}
+                                                       {booking.addOns.length > 0 && (
+  <span className="flex items-center gap-1 ml-1 shrink-0">
+    <span className="relative text-xl mb-1 font-extralight">+</span>
+    {(() => {
+      const names = booking.addOns.map((addon: any) => addon.name);
+      const showPhoto = names.some((name:string) => name.includes('Photo'));
+      const showVideo = names.some((name:string) => name.includes('Video'));
+      const showVirtual = names.some((name:string) => name.includes('Virtual'));
+
+      return (
+        <>
+          {showPhoto && <Photo />}
+          {showVideo && <Video />}
+          {showVirtual && <Virtual />}
+        </>
+      );
+    })()}
+  </span>
+)}
                       </div>
                     </td>
                     <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
                       <div className="text-sm text-[#515662]">
-                        AED {booking.package.price + 
-                            booking.addOns.reduce((sum, addon) => sum + addon.price, 0)}
+                        AED{" "}
+                        {booking.package.price +
+                          booking.addOns.reduce(
+                            (sum, addon) => sum + addon.price,
+                            0
+                          )}
                       </div>
                     </td>
                     <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
                       <div className="text-sm text-[#515662] truncate">
-                        {booking.photographer ? 
-                          `${booking.photographer.firstname} ${booking.photographer.lastname}` : 
-                          'Not assigned'}
+                        {booking.photographer
+                          ? `${booking.photographer.firstname} ${booking.photographer.lastname}`
+                          : "Not assigned"}
                       </div>
                     </td>
                     <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
                       <div className="flex justify-center">
-                        <span className={`px-2 py-1 inline-flex text-xs leading-5 rounded-full ${getStatusColor(booking.status)}`}>
+                        <span
+                          className={`px-2 py-1 inline-flex text-xs leading-5 rounded-full ${getStatusColor(
+                            booking.status
+                          )}`}
+                        >
                           {formatStatus(booking.status)}
                         </span>
                       </div>
@@ -240,8 +268,13 @@ export default function BookingsPage() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 border-r border-[#E0E0E0]">
-                    {searchTerm ? 'No matching bookings found' : 'No bookings available'}
+                  <td
+                    colSpan={5}
+                    className="px-6 py-4 text-center text-sm text-gray-500 border-r border-[#E0E0E0]"
+                  >
+                    {searchTerm
+                      ? "No matching bookings found"
+                      : "No bookings available"}
                   </td>
                 </tr>
               )}
