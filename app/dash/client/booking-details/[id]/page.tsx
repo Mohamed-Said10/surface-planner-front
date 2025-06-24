@@ -283,7 +283,6 @@ export default function BookingDetailsPage() {
          <button
   onClick={() => setIsRescheduleModalOpen(true)}
   type="button"
-  disabled
   className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
 >
   <Calendar className="h-4 w-4" />
@@ -292,7 +291,6 @@ export default function BookingDetailsPage() {
 <button
   onClick={() => setIsChatModalOpen(true)}
   type="button"
-  disabled
   className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
 >
   <HelpCircle className="h-4 w-4" />
@@ -301,7 +299,6 @@ export default function BookingDetailsPage() {
 <button
   onClick={() => setIsCancelModalOpen(true)}
   type="button"
-  disabled
   className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
 >
   <X className="h-4 w-4" />
@@ -309,7 +306,6 @@ export default function BookingDetailsPage() {
 </button>
 <button 
   type="button" 
-  disabled
   className="text-sm justify-center flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
 >
   <Download className="h-4 w-4" />

@@ -189,3 +189,4 @@ export const BookingCalendar: React.FC<BookingCalendarProps> = ({
     </div>
   );
 };
+export default BookingCalendar
