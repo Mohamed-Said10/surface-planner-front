@@ -2,7 +2,7 @@
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BookingsTable from '@/components/shared/bookingsTable';
-import { BookingCalendar }  from '@/components/shared/bookingCalendar';
+import { BookingCalendar }  from '@/components/shared/BookingCalendar';
 import { DollarSign, DollarCircle, CalendarDays, Star} from '@/components/icons';
 import { useRouter } from "next/navigation";
 import { X } from "lucide-react";
