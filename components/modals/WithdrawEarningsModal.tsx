@@ -53,55 +53,55 @@ const WithdrawEarningsModal: React.FC<WithdrawEarningsModalProps> = ({
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2">
             <div 
                 ref={modalRef}
-                className="bg-white rounded-lg w-full max-w-sm mx-auto"
+                className="bg-white rounded-lg w-full max-w-xs mx-auto"
                 onClick={(e) => e.stopPropagation()} 
             >
                 {/* Close Button */}
-                <div className="flex justify-end pt-4 px-4">
+                <div className="flex justify-end pt-2 px-3">
                     <button 
                         onClick={onClose}
                         className="text-[#101828] hover:text-gray-800 transition-colors"
                     >
-                        <X size={25} />
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* Modal Content */}
-                <div className="px-6 pb-6">
+                <div className="px-3 pb-3">
                     {/* Illustration */}
-                    <div className="flex justify-center mb-3">
-                        <WithdrawEarnings height={160} width={190}/>
+                    <div className="flex justify-center mb-1">
+                        <WithdrawEarnings height={140} width={120}/>
                     </div>
 
                     {/* Title */}
-                    <div className="text-center mb-6">
-                        <h3 className="text-2xl font-semibold text-[#101828] mb-1">
+                    <div className="text-center mb-3">
+                        <h3 className="text-lg font-semibold text-[#101828] mb-1">
                             Withdraw your Earnings
                         </h3>
-                        <p className="text-sm text-[#646973] mb-1">Available for Withdraw</p>
-                        <div className="inline-block px-3 py-1.5  bg-[#F1F1F2] font-semibold text-[#101828] rounded-lg">
+                        <p className="text-xs text-[#646973] mb-1">Available for Withdraw</p>
+                        <div className="inline-block px-2 py-1 bg-[#F1F1F2] font-semibold text-[#101828] rounded text-sm">
                             AED 250.73
                         </div>
                     </div>
 
                     {/* Amount Display */}
-                    <div className="text-center mb-6">
+                    <div className="text-center mb-3">
                         <div className="text-left">
-                            <div className="text-sm text-[#515662] mb-2">
+                            <div className="text-xs text-[#515662] mb-1">
                                 How much do you want to Withdraw?
                             </div>
                             <div className="relative mb-1">
-                                <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-sm text-[#93979E] pointer-events-none">
+                                <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-xs text-[#93979E] pointer-events-none">
                                     AED
                                 </span>
                                 <input
                                     type="number"
                                     value={withdrawAmount}
                                     onChange={(e) => setWithdrawAmount(e.target.value)}
-                                    className="w-full pl-12 pr-3 py-2 border border-[#DBDCDF] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                    className="w-full pl-10 pr-2 py-2 border border-[#DBDCDF] rounded text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                                     placeholder="250"
                                 />
                             </div>
@@ -112,36 +112,36 @@ const WithdrawEarningsModal: React.FC<WithdrawEarningsModalProps> = ({
                     </div>
 
                     {/* Payment Methods */}
-                    <div className="mb-6">
-                        <div className="text-sm text-[#101828] mb-3">
+                    <div className="mb-3">
+                        <div className="text-xs text-[#101828] mb-2">
                             Select your Withdraw method
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="grid grid-cols-2 gap-2">
                             {/* PayPal Option */}
                             <div
-                                className={`border rounded-lg pt-4 px-4 cursor-pointer transition-all ${
+                                className={`border rounded pt-2 px-2 pb-1 cursor-pointer transition-all ${
                                     selectedMethod === 'PayPal'
                                         ? 'border-[#0F553E] bg-[#E7EEEC]'
                                         : 'border-gray-300'
                                 }`}
                                 onClick={() => setSelectedMethod('PayPal')}
                             >
-                                <div className="flex items-center justify-center">
-                                    <Paypal size={60} />
+                                <div className="flex items-center justify-center h-16">
+                                    <Paypal size={40} />
                                 </div>
                             </div>
 
                             {/* Payoneer Option */}
                             <div
-                                className={`border rounded-lg py-2 px-4 cursor-pointer transition-all ${
+                                className={`border rounded py-1 px-2 cursor-pointer transition-all ${
                                     selectedMethod === 'Payoneer'
                                         ? 'border-[#0F553E] bg-[#E7EEEC]'
                                         : 'border-gray-300'
                                 }`}
                                 onClick={() => setSelectedMethod('Payoneer')}
                             >
-                                <div className="flex items-center justify-center">
-                                    <Payoneer size={80} />
+                                <div className="flex items-center justify-center h-16">
+                                    <Payoneer size={50} />
                                 </div>
                             </div>
                         </div>
@@ -150,8 +150,8 @@ const WithdrawEarningsModal: React.FC<WithdrawEarningsModalProps> = ({
                     {/* Withdraw Button */}
                     <button
                         onClick={handleWithdraw}
-                        className="w-full bg-[#0F553E] text-white py-3 px-4 rounded-lg font-medium hover:bg-[#1a5e47] transition-colors 
-                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg"
+                        className="w-full bg-[#0F553E] text-white py-2 px-3 rounded font-medium hover:bg-[#1a5e47] transition-colors 
+                        focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 shadow-lg text-sm"
                     >
                         Withdraw
                     </button>
