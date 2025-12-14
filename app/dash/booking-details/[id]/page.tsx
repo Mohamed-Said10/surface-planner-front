@@ -31,6 +31,12 @@ interface Booking {
     phone?: string;
     location?: string;
   } | null;
+  client: {
+    id: string;
+    firstname: string;
+    lastname: string;
+    email: string;
+  };
   firstName: string;
   lastName: string;
   phoneNumber: string;
@@ -66,15 +72,10 @@ export default function BookingDetailsPage() {
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "We have availability as early as tomorrow morning. What date and time work best for you?",
-      sender: 'support',
-      timestamp: '11:11 AM'
-    }
-  ]);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const requestInProgress = useRef(false);
 
@@ -87,7 +88,8 @@ export default function BookingDetailsPage() {
 
       try {
         setLoading(true);
-        const response = await fetch(`http://localhost:3000/api/bookings?id=${id}`, {
+        // Use the correct endpoint for single booking details
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
           credentials: 'include'
         });
         
@@ -115,8 +117,9 @@ export default function BookingDetailsPage() {
     
     const statusOrder = [
       "BOOKING_CREATED",
-      "PHOTOGRAPHER_ASSIGNED", 
-      "SHOOT_IN_PROGRESS",
+      "PHOTOGRAPHER_ASSIGNED",
+      "PHOTOGRAPHER_ACCEPTED",
+      "SHOOTING",
       "EDITING",
       "DELIVERED"
     ];
@@ -175,19 +178,66 @@ export default function BookingDetailsPage() {
     ];
   };
 
-  // Message handlers (preserved from your original code)
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: Date.now().toString(),
+  // Fetch messages when chat modal opens
+  const fetchMessages = async () => {
+    if (!id) return;
+
+    try {
+      setLoadingMessages(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages?bookingId=${id}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const formattedMessages = data.messages.map((msg: any) => ({
+          id: msg.id,
+          text: msg.text,
+          sender: msg.senderId === session?.user?.id ? 'user' : 'support',
+          timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoadingMessages(false);
+    }
+  };
+
+  // Message handlers
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !booking) return;
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: id,
+          receiverId: booking.client.id,
           text: newMessage,
-          sender: 'user',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-      setNewMessage("");
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setMessages([
+          ...messages,
+          {
+            id: data.message.id,
+            text: data.message.text,
+            sender: 'user',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setNewMessage("");
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   };
 
@@ -201,6 +251,39 @@ export default function BookingDetailsPage() {
     setIsCancelModalOpen(false);
   };
 
+  // Fetch messages when chat modal opens
+  useEffect(() => {
+    if (isChatModalOpen) {
+      fetchMessages();
+    }
+  }, [isChatModalOpen]);
+
+  const handleAcceptBooking = async () => {
+    try {
+      setIsAccepting(true);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/accept`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setBooking(updated);
+        // Open chat modal after successful acceptance
+        setIsChatModalOpen(true);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to accept booking');
+      }
+    } catch (error) {
+      console.error('Error accepting booking:', error);
+      alert('Failed to accept booking');
+    } finally {
+      setIsAccepting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-4 flex items-center justify-center h-64">
@@ -209,13 +292,36 @@ export default function BookingDetailsPage() {
     );
   }
 
-  if (!booking) {
+  if (!booking || !booking.package) {
     return (
       <div className="p-4 text-center text-gray-500">
-        Booking not found
+        {!booking ? 'Booking not found' : 'Booking data incomplete'}
       </div>
     );
   }
+
+  const getStatusColor = (status: string) => {
+    switch (status.toLowerCase()) {
+      case "completed":
+        return "bg-green-100 text-green-800";
+      case "booking_created":
+      case "scheduled":
+        return "bg-yellow-100 text-yellow-800";
+      case "photographer_assigned":
+        return "bg-orange-100 text-orange-800";
+      case "photographer_accepted":
+        return "bg-emerald-100 text-emerald-800";
+      case "upcoming":
+        return "bg-yellow-100 text-yellow-800";
+      case "shooting":
+      case "shoot in progress":
+        return "bg-blue-100 text-blue-800";
+      case "editing":
+        return "bg-purple-100 text-purple-800";
+      default:
+        return "bg-gray-100 text-gray-800";
+    }
+  };
 
   const statusSteps = getStatusSteps();
   const completedSteps = statusSteps.filter(step => step.completed).length;
@@ -291,6 +397,14 @@ export default function BookingDetailsPage() {
         </div>
         <hr className="h-1 bg-red mb-4" />
         <div className="grid gap-4 grid-cols-4">
+          <button
+            onClick={handleAcceptBooking}
+            disabled={isAccepting || booking.status !== 'PHOTOGRAPHER_ASSIGNED'}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[#12B76A] hover:bg-[#12B76A]/90 disabled:opacity-50 disabled:cursor-not-allowed
+              shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+          >
+            {isAccepting ? 'Accepting...' : booking.status === 'PHOTOGRAPHER_ACCEPTED' ? 'Booking Accepted' : 'Accept Booking'}
+          </button>
           <button 
             onClick={() => setIsRescheduleModalOpen(true)}
             className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
@@ -383,6 +497,14 @@ export default function BookingDetailsPage() {
         </div>
       </div>
 
+      <UploadWork
+        bookingId={id as string}
+        onFileUpload={(section, files) => {
+          console.log(`Uploading files for ${section}:`, files);
+          // Files will be uploaded by the UploadWork component
+        }}
+      />
+      <Payement_Details/>
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (
@@ -531,27 +653,37 @@ export default function BookingDetailsPage() {
               </button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === 'user'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    <p>{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp}
-                    </p>
-                  </div>
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-600"></div>
                 </div>
-              ))}
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.sender === 'user'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                      }`}
+                    >
+                      <p>{message.text}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="p-4 border-t">
               <div className="flex gap-2">
