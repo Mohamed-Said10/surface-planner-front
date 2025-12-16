@@ -85,17 +85,24 @@ export default function HomePage() {
 
       if (ignoreResponse.current) return;
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to fetch status");
-      }
-
       const data = await response.json();
       setShortIdStatus(data.shortId);
       if (ignoreResponse.current) return;
 
+      // Handle "no bookings" case as empty state, not an error
+      if (!response.ok) {
+        if (data.error && (data.error.includes("haven't made any bookings") || data.error.includes("No bookings"))) {
+          setBookingStatus(null);
+          setStatusLoading(false);
+          return;
+        }
+        throw new Error(data.message || data.error || "Failed to fetch status");
+      }
+
       if (!data?.bookingId) {
-        throw new Error("No booking data available");
+        setBookingStatus(null);
+        setStatusLoading(false);
+        return;
       }
 
       const transformedData = transformStatusHistory(data);

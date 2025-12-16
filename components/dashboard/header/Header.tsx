@@ -3,8 +3,8 @@
 import { Button } from "@/components/ui/button";
 import { usePathname, useRouter } from 'next/navigation';
 import { useMemo, useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
-import { ArrowLeft} from '@/components/icons';
+import { ArrowLeft, Plus } from 'lucide-react';
+import NotificationBell from './NotificationBell';
 
 // Configuration des pages avec leurs titres et sous-titres
 const PAGE_CONFIG = {
@@ -18,6 +18,12 @@ const PAGE_CONFIG = {
     title: 'My Bookings',
     subtitle: 'View and manage your upcoming bookings.',
     showBookButton: true,
+    showBookButtonAdmin: false,
+  },
+  '/dash/client/messages': {
+    title: 'Messages',
+    subtitle: 'Chat with your photographers.',
+    showBookButton: false,
     showBookButtonAdmin: false,
   },
   '/dash/client/completed': {
@@ -35,6 +41,12 @@ const PAGE_CONFIG = {
   '/dash/photographer/bookings': {
     title: 'My Bookings',
     subtitle: '',
+    showBookButton: false,
+    showBookButtonAdmin: false,
+  },
+  '/dash/photographer/messages': {
+    title: 'Messages',
+    subtitle: 'Chat with your clients.',
     showBookButton: false,
     showBookButtonAdmin: false,
   },
@@ -62,11 +74,17 @@ const PAGE_CONFIG = {
     showBookButton: false,
     showBookButtonAdmin: true // button for admin/bookings only based on Figma.
   },
+  '/dash/admin/messages': {
+    title: 'Messages',
+    subtitle: 'Monitor all conversations.',
+    showBookButton: false,
+    showBookButtonAdmin: false
+  },
   '/dash/admin/photographers': {
     title: 'Photographers Management',
     subtitle: "",
     showBookButton: false,
-    showBookButtonAdmin: false 
+    showBookButtonAdmin: false
   },
   '/dash/admin/payments': {
     title: 'Payments',
@@ -144,7 +162,10 @@ export default function Header() {
 
   const handleBack = () => {
     const storedPreviousPath = sessionStorage.getItem('previousPath');
-    
+    if (pathname.startsWith('/dash/admin/photographers-portfolio/')) {
+      router.push('/dash/admin/photographers');
+      return;
+    }
     if (storedPreviousPath && storedPreviousPath !== pathname) {
       router.push(storedPreviousPath);
     } else {
@@ -174,7 +195,7 @@ export default function Header() {
             <ArrowLeft size={30}  />
           </Button>
         )}
-        
+
         <div>
           <h1 className="text-2xl font-bold text-gray-900">
             {pageInfo.title}
@@ -187,7 +208,8 @@ export default function Header() {
         </div>
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex items-center gap-2">
+        <NotificationBell />
         {pageInfo.showBookButton && (
           <Button
             onClick={handleBookNewSession}

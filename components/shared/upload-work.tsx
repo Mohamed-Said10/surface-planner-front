@@ -310,13 +310,49 @@ function UploadSection({
 }
 
 interface UploadWorkProps {
+  bookingId?: string
   onFileUpload?: (section: string, files: FileList) => void
   onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
 
-export default function UploadWork({ onFileUpload, onUploadProgress }: UploadWorkProps) {
-  const handleSectionUpload = (section: string) => (files: FileList) => {
+export default function UploadWork({ bookingId, onFileUpload }: UploadWorkProps) {
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
+
+  const handleSectionUpload = (section: string) => async (files: FileList) => {
     console.log(`Files uploaded to ${section}:`, files)
+
+    if (bookingId) {
+      // Upload files to backend
+      setUploading(prev => ({ ...prev, [section]: true }))
+
+      try {
+        const formData = new FormData()
+        formData.append('bookingId', bookingId)
+        formData.append('fileType', section)
+
+        Array.from(files).forEach((file) => {
+          formData.append('files', file)
+        })
+
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/files`, {
+          method: 'POST',
+          credentials: 'include',
+          body: formData,
+        })
+
+        if (response.ok) {
+          const data = await response.json()
+          console.log(`Successfully uploaded files to ${section}:`, data)
+        } else {
+          console.error(`Failed to upload files to ${section}`)
+        }
+      } catch (error) {
+        console.error(`Error uploading files to ${section}:`, error)
+      } finally {
+        setUploading(prev => ({ ...prev, [section]: false }))
+      }
+    }
+
     if (onFileUpload) {
       onFileUpload(section, files)
     }

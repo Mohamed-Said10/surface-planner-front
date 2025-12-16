@@ -3,9 +3,10 @@
 import React, { useState, useMemo } from "react";
 import { Search } from "@/components/icons";
 import {StarFull} from '@/components/icons';
+import { useRouter } from "next/navigation";
 
 interface PhotographerData {
-  id: string | number;
+  id: string ;
   photographerName: string;
   location: string;
   jobsDone: number;
@@ -36,6 +37,7 @@ const StatusBadge = ({ status }: { status: string }) => {
 export function PhotographersTable({ data, title }: Props) {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const router = useRouter();
 
   const filteredData = useMemo(() => {
     const searchLower = search.toLowerCase();
@@ -100,9 +102,10 @@ export function PhotographersTable({ data, title }: Props) {
               {filteredData.map((photographer, index) => (
                 <tr
                   key={photographer.id}
+                  onClick={() => router.push(`/dash/admin/photographers-portfolio/${photographer.id}`)}
                   className="border-t border-[#E0E0E0] hover:bg-gray-50"
                 >
-                  <td className="py-4 px-4 text-sm border-r border-[#DBDCDF]">{photographer.id}</td>
+                  <td className="py-4 px-4 text-sm border-r border-[#DBDCDF]">{photographer.id.slice(0,8)}...</td>
                   <td className="py-4 px-4 text-sm border-r border-[#DBDCDF]">
                     <span className="text-[#0D4835] underline hover:text-[#0D4835]/80 block">
                       {photographer.photographerName}

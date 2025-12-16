@@ -1,11 +1,11 @@
 'use client';
-import { useCallback,useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Check, HelpCircle, X, Download, Send, Notebook, NotebookText, XSquare  } from "lucide-react";
+import { Check, HelpCircle, X, Download, Send, Notebook, NotebookText, XSquare } from "lucide-react";
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CameraTool,Notes, CalendarDaysCalculated} from '@/components/icons';
+import { CameraTool, Notes, CalendarDaysCalculated } from '@/components/icons';
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
 import CustomerCard from "@/components/shared/CustomerCard";
 import PropertyCard from "@/components/shared/PropertyCard";
@@ -17,6 +17,7 @@ import {
   type BookingStatus,
 } from "@/helpers/bookingStatusHelper";
 import Link from "next/link";
+import { Photographer } from "../../photographers-portfolio/[id]/page";
 
 interface Booking {
   id: string;
@@ -86,7 +87,7 @@ export default function BookingDetailsPage() {
   const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
     null
   );
-  
+
   // Modal states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
@@ -109,61 +110,114 @@ export default function BookingDetailsPage() {
     }
   ]);
   const [newMessage, setNewMessage] = useState("");
+  // 1. new state
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [photographers, setPhotographers] = useState<Photographer[]>([]);
+  const [selectedPhotogId, setSelectedPhotogId] = useState<string>('');
+
+  // 2. fetch available photographers when modal opens
+  const openAssignModal = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Admin/photographers`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        console.log('Photographers API response:', data);
+        // Handle both array response and object with photographers property
+        const photographersList = Array.isArray(data) ? data : data.photographers || [];
+        console.log('Extracted photographers list:', photographersList);
+        setPhotographers(photographersList);
+      }
+    } catch (error) {
+      console.error('Error fetching photographers:', error);
+    }
+    setIsAssignModalOpen(true);
+  };
+
+  // 3. actually assign
+  const handleAssign = async () => {
+    if (!selectedPhotogId) return;
+    try {
+      const url = `/api/bookings/${id}/assign`;
+      console.log('Assigning photographer with URL:', url);
+      const res = await fetch(url, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ photographerId: selectedPhotogId }),
+      });
+      
+      const data = await res.json();
+      console.log('Assignment response:', data, 'Status:', res.status);
+      
+      if (res.ok) {
+        const updated = data;
+        setBooking(updated);               // instantly refresh UI
+        setIsAssignModalOpen(false);
+        setSelectedPhotogId(''); // reset selection
+      } else {
+        console.error('Assignment error:', data);
+        alert(data.error || 'Assignment failed');
+      }
+    } catch (error) {
+      console.error('Assignment request failed:', error);
+      alert('Assignment request failed');
+    }
+  };
 
   const requestInProgress = useRef(false);
 
   // Fetch booking details - FIXED API CALL
   const fetchStatusHistory = useCallback(async () => {
-      abortControllerRef.current = new AbortController();
-      const signal = abortControllerRef.current.signal;
-      ignoreResponse.current = false;
-  
-      try {
-        console.log("Starting fetch request");
-        setStatusLoading(true);
-        setStatusError(null);
-  
-        const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
-          {
-            credentials: "include",
-            headers: { "Content-Type": "application/json" },
-            signal,
-          }
-        );
-  
-        if (ignoreResponse.current) return;
-  
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Failed to fetch status");
+    abortControllerRef.current = new AbortController();
+    const signal = abortControllerRef.current.signal;
+    ignoreResponse.current = false;
+
+    try {
+      console.log("Starting fetch request");
+      setStatusLoading(true);
+      setStatusError(null);
+
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/status-history/last`,
+        {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          signal,
         }
-  
-        const data = await response.json();
-  
-        if (ignoreResponse.current) return;
-  
-        if (!data?.bookingId) {
-          throw new Error("No booking data available");
-        }
-  
-        const transformedData = transformStatusHistory(data);
-        setBookingStatus(transformedData);
-      } catch (err) {
-        if (ignoreResponse.current) return;
-  
-        if (err instanceof Error) {
-          if (err.name !== "AbortError") {
-            setStatusError(err.message);
-          }
-        }
-      } finally {
-        if (!ignoreResponse.current) {
-          setStatusLoading(false);
+      );
+
+      if (ignoreResponse.current) return;
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch status");
+      }
+
+      const data = await response.json();
+
+      if (ignoreResponse.current) return;
+
+      if (!data?.bookingId) {
+        throw new Error("No booking data available");
+      }
+
+      const transformedData = transformStatusHistory(data);
+      setBookingStatus(transformedData);
+    } catch (err) {
+      if (ignoreResponse.current) return;
+
+      if (err instanceof Error) {
+        if (err.name !== "AbortError") {
+          setStatusError(err.message);
         }
       }
-    }, []);
-    useEffect(() => {
+    } finally {
+      if (!ignoreResponse.current) {
+        setStatusLoading(false);
+      }
+    }
+  }, []);
+  useEffect(() => {
     const fetchBookingDetails = async () => {
       if (requestInProgress.current) return;
       requestInProgress.current = true;
@@ -171,14 +225,14 @@ export default function BookingDetailsPage() {
       try {
         setLoading(true);
         // Use the correct endpoint for single booking details
-        const response = await fetch(`/api/bookings/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
           credentials: 'include'
         });
-        
+
         if (!response.ok) throw new Error('Failed to fetch booking');
-        
+
         const bookingData = await response.json();
-        
+
         setBooking(bookingData);
       } catch (error) {
         console.error("Error fetching booking:", error);
@@ -196,43 +250,43 @@ export default function BookingDetailsPage() {
   // Status steps based on booking status
   const getStatusSteps = () => {
     if (!booking) return [];
-    
+
     const statusOrder = [
       "BOOKING_CREATED",
-      "PHOTOGRAPHER_ASSIGNED", 
+      "PHOTOGRAPHER_ASSIGNED",
       "SHOOTING",
       "EDITING",
       "COMPLETED"
     ];
-    
+
     const currentIndex = statusOrder.indexOf(booking.status);
-    
+
     return [
-      { 
-        label: "Booking Requested", 
-        date: new Date(booking.appointmentDate).toLocaleString('en-US', { 
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+      {
+        label: "Booking Requested",
+        date: new Date(booking.appointmentDate).toLocaleString('en-US', {
+          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
         }),
         completed: currentIndex >= 0
       },
-      { 
-        label: "Photographer Assigned", 
-        date: booking.photographer ? 
-          new Date().toLocaleString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+      {
+        label: "Photographer Assigned",
+        date: booking.photographer ?
+          new Date().toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           }) : 'Pending',
         completed: currentIndex >= 1
       },
-      { 
-        label: "Shoot in Progress", 
-        date: currentIndex >= 2 ? 
-          new Date().toLocaleString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+      {
+        label: "Shoot in Progress",
+        date: currentIndex >= 2 ?
+          new Date().toLocaleString('en-US', {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
           }) : 'Pending',
         completed: currentIndex >= 2
       },
-      { 
-        label: "Editing", 
+      {
+        label: "Editing",
         date: currentIndex >= 3 ? 'Currently' : 'Pending',
         completed: currentIndex >= 3,
         inProgress: currentIndex === 3
@@ -241,19 +295,19 @@ export default function BookingDetailsPage() {
         label: "Order Delivery",
         date: currentIndex >= 4
           ? new Date().toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })
+            month: 'short',
+            day: 'numeric',
+          })
           : 'Expected ' +
-            new Date(
-              new Date(booking.appointmentDate).setDate(
-                new Date(booking.appointmentDate).getDate() + 3
-              )
-            ).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
+          new Date(
+            new Date(booking.appointmentDate).setDate(
+              new Date(booking.appointmentDate).getDate() + 3
+            )
+          ).toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
         completed: currentIndex >= 4,
       }
     ];
@@ -337,13 +391,15 @@ export default function BookingDetailsPage() {
             <span>{booking.status.replace('_', ' ').toLowerCase()}</span>
           </div>
         </div>
-        <div className="border-b mb-3 mt-3"/>
+        <div className="border-b mb-3 mt-3" />
 
         <div className="grid grid-cols-3 gap-8 mb-4">
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Include Services</h3>
             <p className="text-sm text-gray-700 font-medium">
-              {booking.package?.description || booking.package?.name || "No package info available"}
+              {booking.addOns && booking.addOns.length > 0
+                ? booking.addOns.map(addOn => addOn.name).join(' + ')
+                : "No add-ons included"}
             </p>
           </div>
           <div>
@@ -359,7 +415,7 @@ export default function BookingDetailsPage() {
           <div>
             <h3 className="text-sm text-gray-500 mb-1">Photographer Assigned</h3>
             <p className="text-sm text-gray-700 font-medium">
-              {booking.photographer 
+              {booking.photographer
                 ? `${booking.photographer.firstname} ${booking.photographer.lastname}`
                 : 'Not assigned yet'
               }
@@ -368,26 +424,30 @@ export default function BookingDetailsPage() {
         </div>
         <hr className="mb-4" />
         <div className="grid gap-4 grid-cols-4">
-          <button 
+          <button
             onClick={() => setIsRescheduleModalOpen(true)}
             className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]"
           >
             <CalendarDaysCalculated color="black" className="h-4 w-4" />
             Reschedule Booking
           </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]">
+          <button
+            onClick={openAssignModal}
+            disabled={!!booking.photographer}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040] disabled:cursor-not-allowed disabled:opacity-50"
+          >
             <CameraTool className="h-4 w-4" />
-            Assign a photographer
+            {booking.photographer ? 'Photographer Assigned' : 'Assign a photographer'}
           </button>
           <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]">
             <Notes className="h-4 w-4" />
             Add Notes
           </button>
-          <button 
+          <button
             onClick={() => setIsCancelModalOpen(true)}
             className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-[#CC3A30] border border-[#F9AFA9] rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]"
           >
-            <XSquare className="h-4 w-4" /> 
+            <XSquare className="h-4 w-4" />
             Cancel Booking
           </button>
         </div>
@@ -400,9 +460,9 @@ export default function BookingDetailsPage() {
         error={statusError}
         onRetry={fetchStatusHistory}
       />
-      
 
-      
+
+
       {/* Customer infos Card */}
       <CustomerCard
         firstName={booking.firstName}
@@ -464,9 +524,8 @@ export default function BookingDetailsPage() {
                   {timeSlots.map((slot) => (
                     <div
                       key={slot.id}
-                      className={`p-4 border rounded-lg cursor-pointer ${
-                        selectedTimeSlot === slot.time ? 'border-emerald-500 bg-emerald-50' : ''
-                      }`}
+                      className={`p-4 border rounded-lg cursor-pointer ${selectedTimeSlot === slot.time ? 'border-emerald-500 bg-emerald-50' : ''
+                        }`}
                       onClick={() => setSelectedTimeSlot(slot.time)}
                     >
                       <div className="flex justify-between items-center">
@@ -535,6 +594,74 @@ export default function BookingDetailsPage() {
         </div>
       )}
 
+      {/* Assign Photographer Modal */}
+      {isAssignModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-[500px] max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Assign Photographer</h2>
+              <button onClick={() => setIsAssignModalOpen(false)}>
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              {photographers.length > 0 ? (
+                <div className="space-y-3">
+                  {photographers.map((photographer) => (
+                    <div
+                      key={photographer.id}
+                      className={`p-4 border rounded-lg cursor-pointer transition-all ${
+                        selectedPhotogId === photographer.id
+                          ? 'border-emerald-500 bg-emerald-50'
+                          : 'border-gray-300 hover:border-emerald-300'
+                      }`}
+                      onClick={() => setSelectedPhotogId(photographer.id)}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="radio"
+                          name="photographer"
+                          value={photographer.id}
+                          checked={selectedPhotogId === photographer.id}
+                          onChange={() => setSelectedPhotogId(photographer.id)}
+                          className="rounded-full"
+                        />
+                        <div className="flex-1">
+                          <p className="font-medium">
+                            {photographer.firstname} {photographer.lastname}
+                          </p>
+                          <p className="text-sm text-gray-500">{photographer.email}</p>
+                          {photographer.phoneNumber && (
+                            <p className="text-sm text-gray-500">{photographer.phoneNumber}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-gray-500">No photographers available</p>
+              )}
+            </div>
+            <div className="p-6 border-t flex gap-3">
+              <button
+                onClick={() => setIsAssignModalOpen(false)}
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAssign}
+                disabled={!selectedPhotogId}
+                className="flex-1 px-4 py-2 bg-emerald-600 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-emerald-700"
+              >
+                Assign Photographer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Chat Modal */}
       {isChatModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -552,16 +679,14 @@ export default function BookingDetailsPage() {
                   className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === 'user'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
+                    className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
+                      }`}
                   >
                     <p>{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
-                    }`}>
+                    <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
+                      }`}>
                       {message.timestamp}
                     </p>
                   </div>
@@ -592,7 +717,7 @@ export default function BookingDetailsPage() {
             </div>
           </div>
         </div>
-        
+
       )}
     </div>
   );

@@ -31,3 +31,5 @@ export { default as Notes } from './Notes';
 export { default as StarFull } from './StarFull';
 export { default as Checkmark } from './Checkmark';
 export { default as Hourglass } from './Hourglass';
+export { default as Message } from './Message';
+export { default as MessageFull } from './MessageFull';

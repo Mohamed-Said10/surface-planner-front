@@ -32,6 +32,7 @@ interface Booking {
     phoneNumber: string;
   } | null;
   client: {
+    id: string;
     firstname: string;
     lastname: string;
     email: string;
@@ -93,22 +94,10 @@ export default function BookingDetailsPage() {
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: "We have availability as early as tomorrow morning. What date and time work best for you?",
-      sender: 'support',
-      timestamp: '11:11 AM'
-    }
-  ]);
+  const [isAccepting, setIsAccepting] = useState(false);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
-  const [uploadProgress, setUploadProgress] = useState({
-    'Unedited Photos': false,
-    'Edited Photos': false,
-    'Videos': false,
-    '360° Virtual Tour': false,
-    'Floor Plan & Room Staging': false
-  });
+  const [loadingMessages, setLoadingMessages] = useState(false);
 
   const requestInProgress = useRef(false);
 
@@ -170,7 +159,7 @@ export default function BookingDetailsPage() {
       try {
         setLoading(true);
         // Use the correct endpoint for single booking details
-        const response = await fetch(`/api/bookings/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
           credentials: 'include'
         });
         
@@ -195,54 +184,16 @@ export default function BookingDetailsPage() {
   const getStatusSteps = () => {
     if (!booking) return [];
     
-    // Vérifier si tous les fichiers sont uploadés
-    const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
+    const statusOrder = [
+      "BOOKING_CREATED",
+      "PHOTOGRAPHER_ASSIGNED",
+      "PHOTOGRAPHER_ACCEPTED",
+      "SHOOTING",
+      "EDITING",
+      "COMPLETED"
+    ];
     
-    const getStepStatus = (stepName: string) => {
-      switch (stepName) {
-        case 'Booking Requested':
-          return { completed: true, date: "May 5, 5:54 AM" };
-        case 'Photographer Assigned':
-          return { 
-            completed: isAccepted || allFilesUploaded, 
-            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending" 
-          };
-        case 'Shoot':
-          return { 
-            completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
-            inProgress: shootStatus === 'shooting' && !allFilesUploaded,
-            upcoming: shootStatus === 'ready' && !allFilesUploaded,
-            date: allFilesUploaded 
-              ? "Completed" 
-              : shootStatus === 'completed' || shootStatus === 'uploading' 
-                ? "Completed" 
-                : shootStatus === 'shooting' 
-                  ? "In Progress" 
-                  : shootStatus === 'ready' 
-                    ? "Ready to Start" 
-                    : "Starts Soon"
-          };
-        case 'Editing':
-          const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
-          
-          return { 
-            completed: allFilesUploaded,
-            inProgress: hasUploadedFiles && !allFilesUploaded,
-            date: allFilesUploaded 
-              ? "All Files Uploaded - Complete"
-              : hasUploadedFiles 
-                ? "Upload in Progress"
-                : "Not Started Yet"
-          };
-        case 'Order Delivery':
-          return { 
-            completed: allFilesUploaded, 
-            date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025" 
-          };
-        default:
-          return { completed: false, date: "Pending" };
-      }
-    };
+    const currentIndex = statusOrder.indexOf(booking.status);
     
     return [
       { 
@@ -268,42 +219,67 @@ export default function BookingDetailsPage() {
     ];
   };
 
-  // Message handlers
-  const handleSendMessage = () => {
-    if (newMessage.trim()) {
-      setMessages([
-        ...messages,
-        {
-          id: Date.now().toString(),
-          text: newMessage,
-          sender: 'user',
-          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }
-      ]);
-      setNewMessage("");
+  // Fetch messages when chat modal opens
+  const fetchMessages = async () => {
+    if (!id) return;
+
+    try {
+      setLoadingMessages(true);
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages?bookingId=${id}`, {
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        const formattedMessages = data.messages.map((msg: any) => ({
+          id: msg.id,
+          text: msg.text,
+          sender: msg.senderId === session?.user?.id ? 'user' : 'support',
+          timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }));
+        setMessages(formattedMessages);
+      }
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+    } finally {
+      setLoadingMessages(false);
     }
   };
 
-  const handleAcceptBooking = () => {
-    setIsAccepted(true);
-    setShootStatus('waiting');
-    // Update booking status to active
-    setBooking(prev => prev ? { ...prev, status: 'PHOTOGRAPHER_ASSIGNED' } : null);
-  };
+  // Message handlers
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !booking) return;
 
-  const handleStartShoot = () => {
-    setShootStatus('shooting');
-    setShootStartTime(new Date());
-    setShootingTime({ hours: 0, minutes: 0, seconds: 0 });
-  };
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId: id,
+          receiverId: booking.client.id,
+          text: newMessage,
+        }),
+      });
 
-  const handleFinishShoot = () => {
-    setShootStatus('completed');
-    // Stop the timer by not updating shootStartTime
-  };
-
-  const handleShootCompleted = () => {
-    setShootStatus('uploading');
+      if (response.ok) {
+        const data = await response.json();
+        setMessages([
+          ...messages,
+          {
+            id: data.message.id,
+            text: data.message.text,
+            sender: 'user',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          }
+        ]);
+        setNewMessage("");
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
   };
 
   const handleReschedule = () => {
@@ -316,20 +292,36 @@ export default function BookingDetailsPage() {
     setIsCancelModalOpen(false);
   };
 
-  const handleUploadProgress = (section: string, hasFiles: boolean) => {
-    setUploadProgress(prev => {
-      const newProgress = { ...prev, [section]: hasFiles };
-      return newProgress;
-    });
-  };
+  // Fetch messages when chat modal opens
+  useEffect(() => {
+    if (isChatModalOpen) {
+      fetchMessages();
+    }
+  }, [isChatModalOpen]);
 
-  const handleRejectBooking = () => {
-    const storedPreviousPath = sessionStorage.getItem('previousPath');
-    
-    if (storedPreviousPath && storedPreviousPath !== window.location.pathname) {
-      router.push(storedPreviousPath);
-    } else {
-      router.push('/dash/photographer/bookings');
+  const handleAcceptBooking = async () => {
+    try {
+      setIsAccepting(true);
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/accept`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setBooking(updated);
+        // Open chat modal after successful acceptance
+        setIsChatModalOpen(true);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to accept booking');
+      }
+    } catch (error) {
+      console.error('Error accepting booking:', error);
+      alert('Failed to accept booking');
+    } finally {
+      setIsAccepting(false);
     }
   };
 
@@ -341,10 +333,10 @@ export default function BookingDetailsPage() {
     );
   }
 
-  if (!booking) {
+  if (!booking || !booking.package) {
     return (
       <div className="p-4 text-center text-gray-500">
-        Booking not found
+        {!booking ? 'Booking not found' : 'Booking data incomplete'}
       </div>
     );
   }
@@ -360,6 +352,10 @@ export default function BookingDetailsPage() {
       case "booking_created":
       case "scheduled":
         return "bg-yellow-100 text-yellow-800";
+      case "photographer_assigned":
+        return "bg-orange-100 text-orange-800";
+      case "photographer_accepted":
+        return "bg-emerald-100 text-emerald-800";
       case "upcoming":
         return "bg-yellow-100 text-yellow-800";
       case "shooting":
@@ -437,214 +433,44 @@ export default function BookingDetailsPage() {
           )}
         </div>
         <hr className="mb-4" />
-        
-        {!isAccepted ? (
-          <div className="grid gap-4 grid-cols-2">
-            <button 
-              onClick={handleAcceptBooking}
-              className="text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[#12B76A] hover:bg-[#12B76A]/90"
-            >
-              Accept Booking
-            </button>
-            <button 
-              onClick={handleRejectBooking}
-              className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-[#CC3A30] border-red-300 hover:bg-gray-50"
-            >
-              <XSquare className="h-4 w-4" />
-              Reject Booking
-            </button>
-          </div>
-        ) : (
-          <div className="grid gap-4 grid-cols-3">
-            <button 
-              onClick={() => setIsRescheduleModalOpen(true)}
-              className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-            >
-              <Calendar className="h-4 w-4" />
-              Reschedule Booking
-            </button>
-            <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
-              <NotebookText className="h-4 w-4" />
-              Add Notes
-            </button>
-            <button 
-              onClick={() => setIsCancelModalOpen(true)}
-              className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-[#CC3A30] border border-[#F9AFA9] rounded-lg hover:bg-[#fff4f4]"
-            >
-              <XSquare className="h-4 w-4" /> 
-              Cancel Booking
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Status Section - Only shown when accepted */}
-      {isAccepted && (
-        <>
-          <div className="bg-white rounded-lg border border-[#DBDCDF] px-6 py-3">
-  <h3 className="text-lg font-semibold mb-2">Status</h3>
-  
-  {/* Progress Steps */}
-  <hr className="mb-4 text-[#DBDCDF]" />
-  
-  {/* Progress Steps */}
-  <div className="flex items-start justify-between mb-1">
-    {statusSteps.map((step, index) => (
-      <div key={index} className="flex flex-col relative flex-1">
-        {/* Progress Line */}
-        {index < statusSteps.length - 1 && (
-          <div
-            className={`absolute top-3 h-0.5 ${
-              step.inProgress 
-              ? 'bg-[#F79009]' 
-              : step.completed 
-                ? 'bg-[#0F9C5A]' 
-                : 'bg-gray-300'
-            }`}
-            style={{
-              height: '3px',
-              left: '32px', // Start after the circle
-              right: '0', // Extend to the right edge
-              width: 'calc(100% - 40px)', // Full width minus circle diameter
-              borderRadius: '9px',
-              zIndex: 0,
-            }}
-          />
-        )}
-        
-        {/* Circle */}
-        <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 relative z-10 ${
-          step.completed 
-            ? 'bg-[#0F9C5A] text-white' 
-            : step.inProgress
-              ? 'bg-[#F79009] text-white animate-pulse'
-              : step.upcoming 
-                ? 'bg-[#F79009] text-white'
-                : 'bg-gray-200 text-gray-400'
-        }`}>
-          {step.completed ? (
-            <Check className="h-4 w-4" />
-          ) : (
-            <div className="w-2 h-2 bg-current rounded-full" />
-          )}
-        </div>
-        
-        {/* Label and Date */}
-        <div className="text-left">
-          <p className="text-sm font-medium text-gray-900 mb-1">{step.label}</p>
-          <p className="text-xs text-gray-500">{step.date}</p>
+        <div className="grid gap-4 grid-cols-4">
+          <button
+            onClick={handleAcceptBooking}
+            disabled={isAccepting || booking.status !== 'PHOTOGRAPHER_ASSIGNED'}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[#12B76A] hover:bg-[#12B76A]/90 disabled:opacity-50 disabled:cursor-not-allowed
+              shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+          >
+            {isAccepting ? 'Accepting...' : booking.status === 'PHOTOGRAPHER_ACCEPTED' ? 'Booking Accepted' : 'Accept Booking'}
+          </button>
+          <button 
+            onClick={() => setIsRescheduleModalOpen(true)}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+          >
+            <Calendar className="h-4 w-4" />
+            Reschedule Booking
+          </button>
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
+            <NotebookText className="h-4 w-4" />
+            Add Notes
+          </button>
+          <button 
+            onClick={() => setIsCancelModalOpen(true)}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-red-600 border-red-300 rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+          >
+            <XSquare className="h-4 w-4" /> 
+            Cancel Booking
+          </button>
         </div>
       </div>
-    ))}
-  </div>
-</div>
 
-          {/* Shooting Section - Show timer or UploadWork */}
-          {shootStatus !== 'uploading' ? (
-            <div className="bg-white rounded-lg border border-[#DBDCDF] px-6 py-3">
-              <h3 className="text-lg font-semibold mb-2">Shooting</h3>
-
-              <hr className="mb-4 text-[#DBDCDF]" />
-              
-              <div className="bg-[#F5F6F6] rounded-lg p-5 text-center">
-                {shootStatus === 'waiting' && (
-                  <>
-                    <p className="text-base text-[#101828] font-medium mb-4">Shoot Starts in</p>
-                    <div className="flex items-center justify-center gap-4 text-4xl font-bold text-[#0F553E] mb-6">
-                      <div className="text-center">
-                        <div>{countdown.hours.toString().padStart(2, '0')}</div>
-                        <div className="text-xs text-[#0F553E] font-normal">Hours</div>
-                      </div>
-                      <div className="text-[#0F553E]">:</div>
-                      <div className="text-center">
-                        <div>{countdown.minutes.toString().padStart(2, '0')}</div>
-                        <div className="text-xs text-[#0F553E] font-normal">Mins</div>
-                      </div>
-                      <div className="text-[#0F553E]">:</div>
-                      <div className="text-center">
-                        <div>{countdown.seconds.toString().padStart(2, '0')}</div>
-                        <div className="text-xs text-[#0F553E] font-normal">Secs</div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {(shootStatus === 'ready' || shootStatus === 'shooting' || shootStatus === 'completed') && (
-                  <>
-                    <p className="text-base text-[#101828] font-medium mb-4">
-                      {shootStatus === 'shooting' ? 'Shooting Time' : 'Shoot Starts in'}
-                    </p>
-                    <div className="flex items-center justify-center gap-4 text-4xl font-bold text-[#CC3A30] mb-6">
-                      <div className="text-center">
-                        <div>
-                          {shootStatus === 'shooting' || shootStatus === 'completed' 
-                            ? shootingTime.hours.toString().padStart(2, '0')
-                            : '00'
-                          }
-                        </div>
-                        <div className="text-xs text-[#CC3A30] font-normal">Hours</div>
-                      </div>
-                      <div className="text-[#CC3A30]">:</div>
-                      <div className="text-center">
-                        <div>
-                          {shootStatus === 'shooting' || shootStatus === 'completed'
-                            ? shootingTime.minutes.toString().padStart(2, '0')
-                            : '00'
-                          }
-                        </div>
-                        <div className="text-xs text-[#CC3A30] font-normal">Mins</div>
-                      </div>
-                      <div className="text-[#CC3A30]">:</div>
-                      <div className="text-center">
-                        <div>
-                          {shootStatus === 'shooting' || shootStatus === 'completed'
-                            ? shootingTime.seconds.toString().padStart(2, '0')
-                            : '00'
-                          }
-                        </div>
-                        <div className="text-xs text-[#CC3A30] font-normal">Secs</div>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                {/* Dynamic Button based on shoot status */}
-                {shootStatus === 'ready' && (
-                  <button 
-                    onClick={handleStartShoot}
-                    className="px-24 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-[#fcfcfc] text-sm font-normal flex items-center gap-2 mx-auto"
-                  >
-                    <CheckCircle className="h-4 w-4" />
-                    Start Shoot Now
-                  </button>
-                )}
-
-                {shootStatus === 'shooting' && (
-                  <button 
-                    onClick={handleFinishShoot}
-                    className="px-24 py-2 bg-[#CC3A30] text-white rounded-lg hover:bg-[#e23f36] text-sm font-normal flex items-center gap-2 mx-auto"
-                  >
-                    <CheckCircle className="h-4 w-4" color="white"/>
-                    Finish Shoot
-                  </button>
-                )}
-
-                {shootStatus === 'completed' && (
-                  <button 
-                    onClick={handleShootCompleted}
-                    className="px-24 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-normal flex items-center gap-2 mx-auto"
-                  >
-                    <CheckCircle className="h-4 w-4" color="white"/>
-                    Shoot Completed
-                  </button>
-                )}
-              </div>
-            </div>
-          ) : (
-            <UploadWork onUploadProgress={handleUploadProgress} />
-          )}
-        </>
-      )}
+      <UploadWork
+        bookingId={id as string}
+        onFileUpload={(section, files) => {
+          console.log(`Uploading files for ${section}:`, files);
+          // Files will be uploaded by the UploadWork component
+        }}
+      />
+      <Payement_Details/>
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (
@@ -796,27 +622,37 @@ export default function BookingDetailsPage() {
               </button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto space-y-4">
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  <div
-                    className={`max-w-[80%] rounded-lg p-3 ${
-                      message.sender === 'user'
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gray-100 text-gray-900'
-                    }`}
-                  >
-                    <p>{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
-                    }`}>
-                      {message.timestamp}
-                    </p>
-                  </div>
+              {loadingMessages ? (
+                <div className="flex items-center justify-center h-full">
+                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-600"></div>
                 </div>
-              ))}
+              ) : messages.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-gray-500">
+                  <p>No messages yet. Start the conversation!</p>
+                </div>
+              ) : (
+                messages.map((message) => (
+                  <div
+                    key={message.id}
+                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-lg p-3 ${
+                        message.sender === 'user'
+                          ? 'bg-emerald-600 text-white'
+                          : 'bg-gray-100 text-gray-900'
+                      }`}
+                    >
+                      <p>{message.text}</p>
+                      <p className={`text-xs mt-1 ${
+                        message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
+                      }`}>
+                        {message.timestamp}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
             <div className="p-4 border-t">
               <div className="flex gap-2">

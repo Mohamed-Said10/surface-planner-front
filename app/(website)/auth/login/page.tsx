@@ -24,7 +24,7 @@ export default function LoginAltPage() {
     setIsLoading(true);
 
     try {
-      
+
       console.log("process.env.NEXT_PUBLIC_API_URL", process.env.NEXT_PUBLIC_API_URL);
       const result = await signIn("credentials", {
         email,
@@ -42,34 +42,34 @@ export default function LoginAltPage() {
       const sessionResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/session`, {
         method: "GET",
         credentials: "include", // Make sure cookies are included in the request
-      }); 
+      });
       const session = await sessionResponse.json();
 
       console.log("Session response:", session); // Add this log
       console.log("Session user:", session?.user);
-      
+
 
       if (!session?.user?.role) {
         throw new Error("No role assigned to user");
       }
 
-      console.log("User role: ", session.user.role); 
+      console.log("User role: ", session.user.role);
 
       // Role-based redirection
       let redirectPath = "/dash"; // Default fallback
-      
+
       if (callbackUrl) {
         redirectPath = callbackUrl;
       } else {
         switch (session.user.role) {
           case "ADMIN":
-            redirectPath = "/admin/dashboard";
+            redirectPath = "/dash/admin";  // ✓ Correct
             break;
           case "PHOTOGRAPHER":
-            redirectPath = "/photographer/dashboard";
+            redirectPath = "/dash/photographer";  // ✓ Correct
             break;
           case "CLIENT":
-            redirectPath = "/dash";
+            redirectPath = "/dash/client";  // ✓ Correct
             break;
           default:
             redirectPath = "/dash";
@@ -135,16 +135,16 @@ export default function LoginAltPage() {
             </div>
 
             <div className="flex items-center justify-between">
-              <Link 
-                href="/auth/forgot-password" 
+              <Link
+                href="/auth/forgot-password"
                 className="text-sm text-[#0F553E] hover:underline"
               >
                 Forgot Password?
               </Link>
             </div>
 
-            <Button 
-              type="submit" 
+            <Button
+              type="submit"
               className="w-full bg-[#0F553E] hover:bg-[#0F553E]/90"
               disabled={isLoading}
             >

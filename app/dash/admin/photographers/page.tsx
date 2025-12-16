@@ -12,28 +12,41 @@ export default function YourNewPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const requestInProgress = useRef(false);
+  const [photographers, setPhotographers] = useState([]);
   
-const staticData = [
-  {
-    id: "120894",
-    photographerName: "Sarah Leslie",
-    location: "Dubai, UAE",
-    jobsDone: 12,
-    contactNo: "+1 (555) 987-6543",
-    status: "Available",
-    avgRating: 4.5,
-  },
-  {
-    id: "120895",
-    photographerName: "John Doe",
-    location: "New York, USA",
-    jobsDone: 25,
-    contactNo: "+1 (555) 123-4567",
-    status: "Inactive",
-    avgRating: 3.8,
-  },
-  // add more rows...
-];
+  useEffect(() => {
+    const fetchPhotographers = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/Admin/photographers`, {
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+        const data = await res.json();
+        
+        const formattedData = data.photographers.map((p: any) => ({
+          id: p.id,
+          photographerName: `${p.firstname} ${p.lastname}`,
+          location: p.city,
+          jobsDone: p.jobs_done || 0,
+          contactNo: p.phoneNumber,
+          status: 'Available', // default or use real status if available
+          avgRating: 4.5, // default or use real rating if available
+        }));
+
+        setPhotographers(formattedData);
+      } catch (err: any) {
+        setError('Failed to load photographers');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPhotographers();
+  }, []);
 const requestData = [
   {
     id: "REQ001",
@@ -84,7 +97,7 @@ const requestData = [
       
       <div>
         {activeTab === 'tab1' ? (
-        <PhotographersTable title="" data={staticData} />
+        <PhotographersTable title="" data={photographers} />
         ) : (
             <RequestsTable data={requestData} />
             )}
