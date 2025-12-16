@@ -315,7 +315,7 @@ interface UploadWorkProps {
   onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
 
-export default function UploadWork({ bookingId, onFileUpload }: UploadWorkProps) {
+export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }: UploadWorkProps) {
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
 
   const handleSectionUpload = (section: string) => async (files: FileList) => {

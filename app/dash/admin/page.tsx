@@ -1,11 +1,10 @@
 "use client";
 import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import BookingsTable from '@/components/shared/bookingsTable';
 import AdminBookingsTable from '@/components/shared/AdminBookingsTable';
-import BookingCalendar from '@/components/shared/BookingCalendar';
+import { BookingCalendar } from '@/components/shared/BookingCalendar';
 
-import { DollarSign, DollarCircle, CalendarDays, Star, CalendarDaysCalculated , Clock} from '@/components/icons';
+import { DollarCircle, CalendarDays, CalendarDaysCalculated, Clock } from '@/components/icons';
 
 // Import the Booking interface from your BookingsPage component
 export interface Booking {

@@ -137,7 +137,7 @@ export default function BookingDetailsPage() {
   const handleAssign = async () => {
     if (!selectedPhotogId) return;
     try {
-      const url = `/api/bookings/${id}/assign`;
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/assign`;
       console.log('Assigning photographer with URL:', url);
       const res = await fetch(url, {
         method: 'POST',

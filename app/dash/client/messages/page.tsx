@@ -50,7 +50,7 @@ export default function ClientMessagesPage() {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/messages/conversations', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/conversations`, {
         credentials: 'include',
       });
 
@@ -68,7 +68,7 @@ export default function ClientMessagesPage() {
   // Fetch messages for a conversation
   const fetchMessages = async (bookingId: string) => {
     try {
-      const response = await fetch(`/api/messages?bookingId=${bookingId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages?bookingId=${bookingId}`, {
         credentials: 'include',
       });
 
@@ -77,7 +77,7 @@ export default function ClientMessagesPage() {
         setMessages(data.messages || []);
 
         // Mark messages as read
-        await fetch('/api/messages/mark-all-read', {
+        await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages/mark-all-read`, {
           method: 'POST',
           credentials: 'include',
           headers: {
@@ -123,7 +123,7 @@ export default function ClientMessagesPage() {
 
     try {
       setSendingMessage(true);
-      const response = await fetch('/api/messages', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
         method: 'POST',
         credentials: 'include',
         headers: {

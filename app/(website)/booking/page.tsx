@@ -20,7 +20,7 @@ export default function Booking() {
     features: ['18 High-Quality Photos', '2D Floor Plan', '7 AI Room Staging Photos', '1-2 Minute Video Tour'],
     pricePerExtra: 0.15
   }, isLoading: false});
-  const steps = ['Property Details', 'Select Package', 'Date & Time', 'Price & Payment', 'Success'];
+  const steps = ['Property Details', 'Select Package', 'Date & Time', 'Personal Details', 'Summary', 'Success'];
 
   const handleNext = () => {
     setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
@@ -71,16 +71,16 @@ export default function Booking() {
             onPrevious={handlePrevious}
           />
         );
-      // case 3:
-      //   return (
-      //     <PersonalDetailsStep
-      //       formData={formData}
-      //       updateFormData={setFormData}
-      //       onNext={handleNext}
-      //       onPrevious={handlePrevious}
-      //     />
-      //   );
       case 3:
+        return (
+          <PersonalDetailsStep
+            formData={formData}
+            updateFormData={setFormData}
+            onNext={handleNext}
+            onPrevious={handlePrevious}
+          />
+        );
+      case 4:
         return (
           <SummaryStep
           onNext={handleNext}

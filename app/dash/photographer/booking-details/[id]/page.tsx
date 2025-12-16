@@ -180,10 +180,31 @@ export default function BookingDetailsPage() {
     }
   }, [session, id]);
 
+  // Helper function to determine step status
+  const getStepStatus = (stepLabel: string) => {
+    if (!booking) return { status: 'pending', icon: null };
+
+    const statusMap: Record<string, string[]> = {
+      'Booking Requested': ['BOOKING_CREATED', 'PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
+      'Photographer Assigned': ['PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
+      'Shoot': ['SHOOTING', 'EDITING', 'COMPLETED'],
+      'Editing': ['EDITING', 'COMPLETED'],
+      'Order Delivery': ['COMPLETED']
+    };
+
+    const activeStatuses = statusMap[stepLabel] || [];
+    const isActive = activeStatuses.includes(booking.status);
+
+    return {
+      status: isActive ? 'completed' : 'pending',
+      icon: isActive ? <CheckCircle /> : null
+    };
+  };
+
   // Status steps based on booking status
   const getStatusSteps = () => {
     if (!booking) return [];
-    
+
     const statusOrder = [
       "BOOKING_CREATED",
       "PHOTOGRAPHER_ASSIGNED",
@@ -192,24 +213,24 @@ export default function BookingDetailsPage() {
       "EDITING",
       "COMPLETED"
     ];
-    
+
     const currentIndex = statusOrder.indexOf(booking.status);
-    
+
     return [
-      { 
-        label: "Booking Requested", 
+      {
+        label: "Booking Requested",
         ...getStepStatus('Booking Requested')
       },
-      { 
-        label: "Photographer Assigned", 
+      {
+        label: "Photographer Assigned",
         ...getStepStatus('Photographer Assigned')
       },
-      { 
-        label: "Shoot", 
+      {
+        label: "Shoot",
         ...getStepStatus('Shoot')
       },
-      { 
-        label: "Editing", 
+      {
+        label: "Editing",
         ...getStepStatus('Editing')
       },
       {
@@ -290,6 +311,29 @@ export default function BookingDetailsPage() {
   const handleCancel = () => {
     console.log("Cancelling with reason:", cancelReason);
     setIsCancelModalOpen(false);
+  };
+
+  const handleRejectBooking = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/reject`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: cancelReason })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setBooking(updated);
+        router.push('/dash/photographer');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to reject booking');
+      }
+    } catch (error) {
+      console.error('Error rejecting booking:', error);
+      alert('Failed to reject booking');
+    }
   };
 
   // Fetch messages when chat modal opens
@@ -470,7 +514,7 @@ export default function BookingDetailsPage() {
           // Files will be uploaded by the UploadWork component
         }}
       />
-      <Payement_Details/>
+      {/* <Payement_Details/> */}
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (

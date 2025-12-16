@@ -55,7 +55,7 @@ export default function AdminMessagesPage() {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/messages/conversations', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/messages/conversations`, {
         credentials: 'include',
       });
 
@@ -73,7 +73,7 @@ export default function AdminMessagesPage() {
   // Fetch messages for a conversation
   const fetchMessages = async (bookingId: string) => {
     try {
-      const response = await fetch(`/api/messages?bookingId=${bookingId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages?bookingId=${bookingId}`, {
         credentials: 'include',
       });
 
