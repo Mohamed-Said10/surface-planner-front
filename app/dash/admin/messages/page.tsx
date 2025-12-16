@@ -55,7 +55,7 @@ export default function AdminMessagesPage() {
   const fetchConversations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/messages/conversations', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/admin/messages/conversations`, {
         credentials: 'include',
       });
 

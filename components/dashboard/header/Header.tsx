@@ -1,4 +1,3 @@
-// components/dashboard/header/Header.tsx
 'use client';
 
 import { Button } from "@/components/ui/button";
@@ -96,9 +95,9 @@ const PAGE_CONFIG = {
 } as const;
 
 export default function Header() {
-    const pathname = usePathname();
-    const [pageTitle, setPageTitle] = useState('Dashboard');
-    const [pageSubtitle, setPageSubtitle] = useState("Here's the overview of your latest bookings.");
+  const pathname = usePathname();
+  const router = useRouter();
+  const [previousPath, setPreviousPath] = useState<string>('');
 
   // Sauvegarder l'URL précédente dans sessionStorage
   useEffect(() => {
@@ -185,7 +184,7 @@ export default function Header() {
 
   return (
     <div className="flex justify-between items-center p-6">
-      <div className="flex items-center gap-4">
+      <div className="flex items-center">
         {pageInfo.showBackButton && (
           <Button
             variant="ghost"
@@ -193,8 +192,7 @@ export default function Header() {
             onClick={handleBack}
             className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
+            <ArrowLeft size={30}  />
           </Button>
         )}
 
@@ -226,15 +224,7 @@ export default function Header() {
           <Button
             onClick={handleAddNewBooking}
             variant="outline"
-            className="flex items-center w-[182px] h-[44px] gap-2 rounded-[8px] p-[12px_18px] bg-white text-[#101828] border border-[#DBDCDF] hover:bg-gray-100"
-          style={{
-    boxShadow: `
-      inset 0px 1.5px 0px 0px #ffffff7a,
-      inset -1.5px 0px 0px 0px #ffffff33,
-      inset 1.5px 0px 0px 0px #ffffff33,
-      inset 0px -2px 0px 0px #00000040
-    `
-  }}
+            className="flex items-center gap-2 text-[#101828] border-[#DBDCDF] hover:bg-gray-100"
           >
             Add a New Booking
           </Button>

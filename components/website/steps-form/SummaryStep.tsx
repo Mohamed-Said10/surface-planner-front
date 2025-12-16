@@ -50,7 +50,7 @@ export default function SummaryStep({ formData, onPrevious, onNext }: SummarySte
 
     try {
       // User is authenticated, create booking
-      const response = await fetch('/api/bookings', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
         method: 'POST',
         credentials: 'include',
         headers: {

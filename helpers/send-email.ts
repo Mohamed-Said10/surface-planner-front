@@ -1,6 +1,6 @@
 
 export function sendEmail(data: any, source: string) {
-  const apiEndpoint = '/api/'+ source;
+  const apiEndpoint = `${process.env.NEXT_PUBLIC_API_URL}/api/`+ source;
 
   fetch(apiEndpoint, {
     method: 'POST',

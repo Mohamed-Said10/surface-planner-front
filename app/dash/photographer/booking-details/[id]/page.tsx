@@ -2,7 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Check, Calendar, HelpCircle, X, Download, Send } from "lucide-react";
+import { Check, Calendar, X, Send, NotebookText } from "lucide-react";
+import UploadWork from "@/components/shared/upload-work";
+import { CheckCircle, XSquare } from '@/components/icons';
+import { useRouter } from "next/navigation";
 
 interface Booking {
   id: string;
@@ -27,9 +30,6 @@ interface Booking {
     lastname: string;
     email: string;
     phoneNumber: string;
-    name?: string;
-    phone?: string;
-    location?: string;
   } | null;
   client: {
     id: string;
@@ -42,6 +42,14 @@ interface Booking {
   phoneNumber: string;
   email: string;
   notes: string | null;
+  // Add payment data when available
+  payments?: Array<{
+    id: string;
+    amount: number;
+    status: string;
+    paymentMethod: string;
+    createdAt: string;
+  }>;
 }
 
 interface Message {
@@ -59,11 +67,25 @@ const timeSlots = [
 
 export default function BookingDetailsPage() {
   const { id } = useParams();
+  const router = useRouter();
   const { data: session } = useSession();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAccepted, setIsAccepted] = useState(false);
+  const [countdown, setCountdown] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 5 // Set to 5 seconds for testing
+  });
+  const [shootStatus, setShootStatus] = useState('waiting'); // 'waiting', 'ready', 'shooting', 'completed', 'uploading'
+  const [shootingTime, setShootingTime] = useState({
+    hours: 0,
+    minutes: 0,
+    seconds: 0
+  });
+  const [shootStartTime, setShootStartTime] = useState<Date | null>(null);
   
-  // Modal states (preserved from your original code)
+  // Modal states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
@@ -79,11 +101,59 @@ export default function BookingDetailsPage() {
 
   const requestInProgress = useRef(false);
 
-  // Fetch booking details
+  // Countdown timer effect
+  useEffect(() => {
+    if (!isAccepted || shootStatus !== 'waiting') return;
+
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        let { hours, minutes, seconds } = prev;
+        
+        if (seconds > 0) {
+          seconds--;
+        } else if (minutes > 0) {
+          minutes--;
+          seconds = 59;
+        } else if (hours > 0) {
+          hours--;
+          minutes = 59;
+          seconds = 59;
+        } else {
+          // Countdown finished
+          clearInterval(timer);
+          setShootStatus('ready');
+          return { hours: 0, minutes: 0, seconds: 0 };
+        }
+        
+        return { hours, minutes, seconds };
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [isAccepted, shootStatus]);
+
+  // Shooting timer effect
+  useEffect(() => {
+    if (shootStatus !== 'shooting' || !shootStartTime) return;
+
+    const timer = setInterval(() => {
+      const now = new Date();
+      const elapsed = Math.floor((now.getTime() - shootStartTime.getTime()) / 1000);
+      
+      const hours = Math.floor(elapsed / 3600);
+      const minutes = Math.floor((elapsed % 3600) / 60);
+      const seconds = elapsed % 60;
+      
+      setShootingTime({ hours, minutes, seconds });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [shootStatus, shootStartTime]);
+
+  // Fetch booking details - FIXED API CALL
   useEffect(() => {
     const fetchBookingDetails = async () => {
-
-      if (requestInProgress.current) return; // Skip if already fetching
+      if (requestInProgress.current) return;
       requestInProgress.current = true;
 
       try {
@@ -95,14 +165,13 @@ export default function BookingDetailsPage() {
         
         if (!response.ok) throw new Error('Failed to fetch booking');
         
-        const data = await response.json();
-        if (data.bookings.length > 0) {
-          setBooking(data.bookings[0]);
-        }
+        const bookingData = await response.json();
+        setBooking(bookingData);
       } catch (error) {
         console.error("Error fetching booking:", error);
       } finally {
         setLoading(false);
+        requestInProgress.current = false;
       }
     };
 
@@ -111,69 +180,62 @@ export default function BookingDetailsPage() {
     }
   }, [session, id]);
 
+  // Helper function to determine step status
+  const getStepStatus = (stepLabel: string) => {
+    if (!booking) return { status: 'pending', icon: null };
+
+    const statusMap: Record<string, string[]> = {
+      'Booking Requested': ['BOOKING_CREATED', 'PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
+      'Photographer Assigned': ['PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
+      'Shoot': ['SHOOTING', 'EDITING', 'COMPLETED'],
+      'Editing': ['EDITING', 'COMPLETED'],
+      'Order Delivery': ['COMPLETED']
+    };
+
+    const activeStatuses = statusMap[stepLabel] || [];
+    const isActive = activeStatuses.includes(booking.status);
+
+    return {
+      status: isActive ? 'completed' : 'pending',
+      icon: isActive ? <CheckCircle /> : null
+    };
+  };
+
   // Status steps based on booking status
   const getStatusSteps = () => {
     if (!booking) return [];
-    
+
     const statusOrder = [
       "BOOKING_CREATED",
       "PHOTOGRAPHER_ASSIGNED",
       "PHOTOGRAPHER_ACCEPTED",
       "SHOOTING",
       "EDITING",
-      "DELIVERED"
+      "COMPLETED"
     ];
-    
+
     const currentIndex = statusOrder.indexOf(booking.status);
-    
+
     return [
-      { 
-        label: "Booking Requested", 
-        date: new Date(booking.appointmentDate).toLocaleString('en-US', { 
-          month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-        }),
-        completed: currentIndex >= 0
+      {
+        label: "Booking Requested",
+        ...getStepStatus('Booking Requested')
       },
-      { 
-        label: "Photographer Assigned", 
-        date: booking.photographer ? 
-          new Date().toLocaleString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-          }) : 'Pending',
-        completed: currentIndex >= 1
+      {
+        label: "Photographer Assigned",
+        ...getStepStatus('Photographer Assigned')
       },
-      { 
-        label: "Shoot in Progress", 
-        date: currentIndex >= 2 ? 
-          new Date().toLocaleString('en-US', { 
-            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
-          }) : 'Pending',
-        completed: currentIndex >= 2
+      {
+        label: "Shoot",
+        ...getStepStatus('Shoot')
       },
-      { 
-        label: "Editing", 
-        date: currentIndex >= 3 ? 'Currently' : 'Pending',
-        completed: currentIndex >= 3,
-        inProgress: currentIndex === 3
+      {
+        label: "Editing",
+        ...getStepStatus('Editing')
       },
       {
         label: "Order Delivery",
-        date: currentIndex >= 4
-          ? new Date().toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-            })
-          : 'Expected ' +
-            new Date(
-              new Date(booking.appointmentDate).setDate(
-                new Date(booking.appointmentDate).getDate() + 3
-              )
-            ).toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-        completed: currentIndex >= 4,
+        ...getStepStatus('Order Delivery')
       }
     ];
   };
@@ -251,6 +313,29 @@ export default function BookingDetailsPage() {
     setIsCancelModalOpen(false);
   };
 
+  const handleRejectBooking = async () => {
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/reject`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: cancelReason })
+      });
+
+      if (res.ok) {
+        const updated = await res.json();
+        setBooking(updated);
+        router.push('/dash/photographer');
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to reject booking');
+      }
+    } catch (error) {
+      console.error('Error rejecting booking:', error);
+      alert('Failed to reject booking');
+    }
+  };
+
   // Fetch messages when chat modal opens
   useEffect(() => {
     if (isChatModalOpen) {
@@ -301,6 +386,10 @@ export default function BookingDetailsPage() {
   }
 
   const getStatusColor = (status: string) => {
+    if (isAccepted) {
+      return "bg-green-100 text-green-800";
+    }
+    
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800";
@@ -323,79 +412,71 @@ export default function BookingDetailsPage() {
     }
   };
 
+  const getStatusText = () => {
+    if (isAccepted) {
+      return "Active";
+    }
+    return booking.status === 'BOOKING_CREATED' 
+    ? 'Upcoming' 
+    : booking.status.replace(/_/g, ' ').toLowerCase();
+  };
+
+  console.log('test booking', booking)
+
+  // Mock photographer data when accepted
+  const getPhotographerName = () => {
+    if (isAccepted || booking.photographer) {
+      return booking.photographer 
+        ? `${booking.photographer.firstname} ${booking.photographer.lastname}` 
+        : 'Michael Philips';
+    }
+    return 'Not assigned yet';
+  };
+
   const statusSteps = getStatusSteps();
-  const completedSteps = statusSteps.filter(step => step.completed).length;
-  const inProgressStep = statusSteps.findIndex(step => step.inProgress);
 
   return (
     <div className="p-4 space-y-4">
-      {/* Booking Status - Dynamic */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-sm font-semibold mb-6">Status</h2>
-        <div className="relative grid justify-between grid-cols-5">
-          {statusSteps.map((step, index) => (
-            <div key={index} className="col-span-1 flex flex-col items-left text-left relative z-10">
-              <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 
-                    ${step.completed ? 'bg-emerald-500' : step.inProgress ? 'bg-orange-500' : 'bg-gray-200'}`}>
-                {step.completed ? (
-                  <Check className="h-5 w-5 text-white" />
-                ) : (
-                  <div className="w-2 h-2 rounded-full bg-white" />
-                )}
-              </div>
-              <div className="text-xs font-medium">{step.label}</div>
-              <div className="text-xs text-gray-500">{step.date}</div>
-            </div>
-          ))}
-          {/* Progress Lines - Dynamic */}
-          <div className="absolute top-3 left-0 w-full h-[2px] flex">
-            <div className="h-full bg-emerald-500" style={{ width: `${(completedSteps / (statusSteps.length - 1)) * 100}%` }} />
-            <div className="h-full bg-orange-500" style={{ width: `${inProgressStep >= 0 ? '15%' : '0%'}` }} />
-            <div className="h-full bg-gray-200" style={{ width: `${100 - ((completedSteps / (statusSteps.length - 1)) * 100 - (inProgressStep >= 0 ? 15 : 0))}` }} />
-          </div>
-        </div>
-      </div>
-
       {/* Package Details - Dynamic */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-start gap-4 mb-4">
-          <div className="p-2 bg-orange-100 rounded-lg">
-            <div className="w-8 h-8 text-orange-600 justify-center flex items-center">💎</div>
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
+        <div className="flex items-start justify-between gap-4">
+          <div className="flex items-start gap-2 flex-wrap flex-col">
+            <span className="text-lg font-semibold">Booking #{booking.id.slice(0, 8)}</span>
+            <h2 className="text-sm text-gray-600">Diamond Package</h2>
           </div>
-          <div>
-            <h2 className="text-md font-semibold">{booking.package.name}</h2>
-            <p className="text-sm text-gray-600">
-              Addons: {booking.addOns.map(a => a.name).join(', ') || 'None'}
-            </p>
+          <div className={`text-sm font-medium px-3 py-1 rounded-full ${getStatusColor(booking.status)}`}>
+            <span>{getStatusText()}</span>
           </div>
         </div>
+        <div className="border-b mb-3 mt-3"/>
 
-        <div className="grid grid-cols-3 gap-8 mb-4">
+        <div className={`grid gap-8 mb-4 ${isAccepted ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div>
-            <h3 className="text-sm text-gray-500 mb-1">Property Address</h3>
-            <p className="text-sm font-medium">
-              {booking.buildingName}, {booking.street}, Unit {booking.unitNumber}, Floor {booking.floor}
+            <h3 className="text-sm text-gray-500 mb-1">Included Services</h3>
+            <p className="text-sm text-gray-700 font-medium">
+              Twilight Photos + 360° Virtual Tour
             </p>
           </div>
           <div>
-            <h3 className="text-sm text-gray-500 mb-1">Scheduled Date & Time</h3>
-            <p className="text-sm font-medium">
-              {new Date(booking.appointmentDate).toLocaleString('en-US', {
-                month: 'short', day: 'numeric', year: 'numeric',
-                hour: '2-digit', minute: '2-digit'
-              })} ({booking.timeSlot})
+            <h3 className="text-sm text-gray-500 mb-1">Date & Time</h3>
+            <p className="text-sm text-gray-700 font-medium">
+              {new Date(booking.appointmentDate).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })} – {booking.timeSlot}
             </p>
           </div>
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Assigned Photographer</h3>
-            <p className="text-sm font-medium">
-              {booking.photographer ? 
-                `${booking.photographer.firstname} ${booking.photographer.lastname}` : 
-                'Not assigned yet'}
-            </p>
-          </div>
+          {isAccepted && (
+            <div>
+              <h3 className="text-sm text-gray-500 mb-1">Photographer Assigned</h3>
+              <p className="text-sm text-gray-700 font-medium">
+                {getPhotographerName()}
+              </p>
+            </div>
+          )}
         </div>
-        <hr className="h-1 bg-red mb-4" />
+        <hr className="mb-4" />
         <div className="grid gap-4 grid-cols-4">
           <button
             onClick={handleAcceptBooking}
@@ -407,93 +488,22 @@ export default function BookingDetailsPage() {
           </button>
           <button 
             onClick={() => setIsRescheduleModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
           >
             <Calendar className="h-4 w-4" />
             Reschedule Booking
           </button>
-          <button 
-            onClick={() => setIsChatModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
-          >
-            <HelpCircle className="h-4 w-4" />
-            Contact Support
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
+            <NotebookText className="h-4 w-4" />
+            Add Notes
           </button>
           <button 
             onClick={() => setIsCancelModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-red-600 hover:bg-red-50"
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-red-600 border-red-300 rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
           >
-            <X className="h-4 w-4" />
+            <XSquare className="h-4 w-4" /> 
             Cancel Booking
           </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 bg-gray-100 rounded-lg text-gray-700 hover:bg-gray-200">
-            <Download className="h-4 w-4" />
-            Download Photos
-          </button>
-        </div>
-      </div>
-
-      {/* Photographer Details - Dynamic */}
-      {booking.photographer && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-lg font-semibold">Photographer Details</h2>
-            <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
-              View Portfolio →
-            </button>
-          </div>
-
-          <hr className="h-1 bg-red mb-2" />
-          <div className="grid grid-cols-4 gap-8">
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Name</h3>
-              <p className="text-sm font-medium">
-                {booking.photographer.firstname} {booking.photographer.lastname}
-              </p>
-            </div>
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Email</h3>
-              <p className="text-sm font-medium">{booking.photographer.email}</p>
-            </div>
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
-              <p className="text-sm font-medium">{booking.photographer.phoneNumber}</p>
-            </div>
-            <div>
-              <h3 className="text-sm text-gray-500 mb-1">Location</h3>
-              <p className="text-sm font-medium">Dubai UAE</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Photographer Details */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-lg font-semibold">Photographer Details</h2>
-          <button className="text-emerald-600 hover:text-emerald-700 text-sm font-medium">
-            View Portfolio →
-          </button>
-        </div>
-
-        <hr className="h-1 bg-red mb-2" />
-        <div className="grid grid-cols-4 gap-8">
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Name</h3>
-            <p className="text-sm font-medium">{booking.photographer?.name}</p>
-          </div>
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Email</h3>
-            <p className="text-sm font-medium">{booking.photographer?.email}</p>
-          </div>
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Phone</h3>
-            <p className="text-sm font-medium">{booking.photographer?.phone}</p>
-          </div>
-          <div>
-            <h3 className="text-sm text-gray-500 mb-1">Location</h3>
-            <p className="text-sm font-medium">{booking.photographer?.location}</p>
-          </div>
         </div>
       </div>
 
@@ -504,7 +514,7 @@ export default function BookingDetailsPage() {
           // Files will be uploaded by the UploadWork component
         }}
       />
-      <Payement_Details/>
+      {/* <Payement_Details/> */}
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (
@@ -631,7 +641,10 @@ export default function BookingDetailsPage() {
                   Keep Booking
                 </button>
                 <button
-                  onClick={handleCancel}
+                  onClick={() => {
+                    handleCancel();
+                    handleRejectBooking();
+                  }}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg"
                 >
                   Cancel Booking
@@ -647,7 +660,7 @@ export default function BookingDetailsPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg w-[500px] h-[600px] flex flex-col">
             <div className="p-6 border-b flex justify-between items-center">
-              <h2 className="text-xl font-semibold">Help for Booking #{booking.id}</h2>
+              <h2 className="text-xl font-semibold">Help for Booking #{booking.id.slice(0, 8)}</h2>
               <button onClick={() => setIsChatModalOpen(false)}>
                 <X className="h-5 w-5 text-gray-500" />
               </button>

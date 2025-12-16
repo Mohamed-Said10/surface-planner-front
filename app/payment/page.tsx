@@ -94,7 +94,7 @@ export default function PaymentPage() {
     
     try {
       setIsLoading(true);
-      const response = await fetch(`http://localhost:3000/api/payments?bookingId=${bookingId}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments?bookingId=${bookingId}`, {
         method: 'GET',
         credentials: 'include',
       });
@@ -118,7 +118,7 @@ export default function PaymentPage() {
   const handleCreateBooking = async (formData:any) => {
     try {
       setIsProcessing(true);
-      const response = await fetch('/api/bookings', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -139,12 +139,15 @@ export default function PaymentPage() {
       }
 
       toast.success("Booking created successfully!");
-      
+
       // Set the booking data directly instead of fetching again
       setBookingData(data.booking);
-      
+
       // Calculate the total amount directly
-      let total = data.booking.package.price;
+      let total = 0;
+      if (data.booking.package && data.booking.package.price) {
+        total = data.booking.package.price;
+      }
       if (data.booking.addOns && data.booking.addOns.length) {
         data.booking.addOns.forEach((addon :any)=> {
           total += addon.price;
@@ -190,7 +193,7 @@ export default function PaymentPage() {
       setIsProcessing(true);
       const cleanBookingId = bookingId?.replace(/['"\\]/g, '');
 
-      const response = await fetch('/api/payments', {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/payments`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -304,26 +307,26 @@ export default function PaymentPage() {
             </div>
           )}
 
-          {bookingData && (
+          {bookingData && bookingData.package && (
             <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 space-y-3">
               <h3 className="font-medium text-gray-800">Booking Summary</h3>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <p className="text-gray-500">Package:</p>
                 <p className="text-gray-800 font-medium">{bookingData.package.name}</p>
-                
+
                 <p className="text-gray-500">Date:</p>
                 <p className="text-gray-800">{new Date(bookingData.appointmentDate).toLocaleDateString()}</p>
-                
+
                 <p className="text-gray-500">Time:</p>
                 <p className="text-gray-800">{bookingData.timeSlot}</p>
               </div>
-              
+
               <div className="border-t border-gray-200 pt-2 mt-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">Package price:</span>
                   <span>${bookingData.package.price.toFixed(2)}</span>
                 </div>
-                
+
                 {bookingData.addOns && bookingData.addOns.length > 0 && (
                   <>
                     {bookingData.addOns.map((addon) => (
@@ -334,7 +337,7 @@ export default function PaymentPage() {
                     ))}
                   </>
                 )}
-                
+
                 <div className="flex justify-between font-medium text-base mt-2 pt-2 border-t border-gray-200">
                   <span>Total:</span>
                   <span>${totalAmount.toFixed(2)}</span>

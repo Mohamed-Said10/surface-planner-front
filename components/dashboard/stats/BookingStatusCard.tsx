@@ -17,6 +17,7 @@ interface BookingStatusCardProps {
   bookingStatus: BookingStatus | null;
   loading: boolean;
   error: string | null;
+  shortId: string;  // Short ID for the booking, used in the header   
   onRetry?: () => void;
 }
 
@@ -24,6 +25,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
   bookingStatus,
   loading,
   error,
+  shortId,
   onRetry
 }) => {
   const router = useRouter();
@@ -31,7 +33,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <div className="animate-pulse space-y-4">
           <div className="h-4 bg-gray-200 rounded w-1/3"></div>
           <div className="flex justify-between">
@@ -64,7 +66,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
                              displayError.includes('You haven\'t made any bookings yet');
 
     return (
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <div className={`text-center p-4 rounded-lg ${
           isNoBookingsError ? 'bg-[#F0F7F4] text-[#0D4835]' : 'bg-red-50 text-red-800'
         }`}>
@@ -82,7 +84,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
           ) : (
             <button 
               className="mt-3 px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200 text-sm"
-              onClick={() => window.location.reload()}
+              onClick={onRetry || (() => window.location.reload())}
             >
               Try Again
             </button>
@@ -111,9 +113,9 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   return (
     <div>
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
         <h2 className="text-sm font-semibold mb-6">
-          Booking #{bookingStatus.id.substring(0, 8)} Status
+          Booking #{shortId} Status
         </h2>
         <div className="relative flex justify-between">
           {bookingStatus.steps.map((step, index) => {
@@ -170,7 +172,7 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
             );
           })}
         </div>
-      </div>
+      </div> 
     </div>
   );
 };

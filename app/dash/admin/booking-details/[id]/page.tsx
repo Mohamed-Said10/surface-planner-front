@@ -137,7 +137,7 @@ export default function BookingDetailsPage() {
   const handleAssign = async () => {
     if (!selectedPhotogId) return;
     try {
-      const url = `/api/bookings/${id}/assign`;
+      const url = `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/assign`;
       console.log('Assigning photographer with URL:', url);
       const res = await fetch(url, {
         method: 'POST',
@@ -439,7 +439,7 @@ export default function BookingDetailsPage() {
             <CameraTool className="h-4 w-4" />
             {booking.photographer ? 'Photographer Assigned' : 'Assign a photographer'}
           </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040] disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:bg-white" disabled>
+          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border border-[#DBDCDF] rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF7A,inset_-1.5px_0_0_0_#FFFFFF33,inset_1.5px_0_0_0_#FFFFFF33,inset_0_-2px_0_0_#00000040]">
             <Notes className="h-4 w-4" />
             Add Notes
           </button>
