@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Check, Calendar, X, Send, NotebookText } from "lucide-react";
+import { Check, Calendar, X, Send, NotebookText, Ellipsis } from "lucide-react";
 import UploadWork from "@/components/shared/upload-work";
 import { CheckCircle, XSquare } from '@/components/icons';
 import { useRouter } from "next/navigation";
@@ -32,7 +32,6 @@ interface Booking {
     phoneNumber: string;
   } | null;
   client: {
-    id: string;
     firstname: string;
     lastname: string;
     email: string;
@@ -84,20 +83,33 @@ export default function BookingDetailsPage() {
     seconds: 0
   });
   const [shootStartTime, setShootStartTime] = useState<Date | null>(null);
-  
+
   // Modal states
   const [isRescheduleModalOpen, setIsRescheduleModalOpen] = useState(false);
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+  const [isRejectModalOpen, setIsRejectModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTimeSlot, setSelectedTimeSlot] = useState("");
   const [rescheduleReason, setRescheduleReason] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [agreeToTerms, setAgreeToTerms] = useState(false);
-  const [isAccepting, setIsAccepting] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: "We have availability as early as tomorrow morning. What date and time work best for you?",
+      sender: 'support',
+      timestamp: '11:11 AM'
+    }
+  ]);
   const [newMessage, setNewMessage] = useState("");
-  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({
+    'Unedited Photos': false,
+    'Edited Photos': false,
+    'Videos': false,
+    '360° Virtual Tour': false,
+    'Floor Plan & Room Staging': false
+  });
 
   const requestInProgress = useRef(false);
 
@@ -108,7 +120,7 @@ export default function BookingDetailsPage() {
     const timer = setInterval(() => {
       setCountdown(prev => {
         let { hours, minutes, seconds } = prev;
-        
+
         if (seconds > 0) {
           seconds--;
         } else if (minutes > 0) {
@@ -124,7 +136,7 @@ export default function BookingDetailsPage() {
           setShootStatus('ready');
           return { hours: 0, minutes: 0, seconds: 0 };
         }
-        
+
         return { hours, minutes, seconds };
       });
     }, 1000);
@@ -139,11 +151,11 @@ export default function BookingDetailsPage() {
     const timer = setInterval(() => {
       const now = new Date();
       const elapsed = Math.floor((now.getTime() - shootStartTime.getTime()) / 1000);
-      
+
       const hours = Math.floor(elapsed / 3600);
       const minutes = Math.floor((elapsed % 3600) / 60);
       const seconds = elapsed % 60;
-      
+
       setShootingTime({ hours, minutes, seconds });
     }, 1000);
 
@@ -159,12 +171,12 @@ export default function BookingDetailsPage() {
       try {
         setLoading(true);
         // Use the correct endpoint for single booking details
-        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
+        const response = await fetch(`/api/bookings/${id}`, {
           credentials: 'include'
         });
-        
+
         if (!response.ok) throw new Error('Failed to fetch booking');
-        
+
         const bookingData = await response.json();
         setBooking(bookingData);
       } catch (error) {
@@ -180,41 +192,58 @@ export default function BookingDetailsPage() {
     }
   }, [session, id]);
 
-  // Helper function to determine step status
-  const getStepStatus = (stepLabel: string) => {
-    if (!booking) return { status: 'pending', icon: null };
-
-    const statusMap: Record<string, string[]> = {
-      'Booking Requested': ['BOOKING_CREATED', 'PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
-      'Photographer Assigned': ['PHOTOGRAPHER_ASSIGNED', 'PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'],
-      'Shoot': ['SHOOTING', 'EDITING', 'COMPLETED'],
-      'Editing': ['EDITING', 'COMPLETED'],
-      'Order Delivery': ['COMPLETED']
-    };
-
-    const activeStatuses = statusMap[stepLabel] || [];
-    const isActive = activeStatuses.includes(booking.status);
-
-    return {
-      status: isActive ? 'completed' : 'pending',
-      icon: isActive ? <CheckCircle /> : null
-    };
-  };
-
   // Status steps based on booking status
   const getStatusSteps = () => {
     if (!booking) return [];
 
-    const statusOrder = [
-      "BOOKING_CREATED",
-      "PHOTOGRAPHER_ASSIGNED",
-      "PHOTOGRAPHER_ACCEPTED",
-      "SHOOTING",
-      "EDITING",
-      "COMPLETED"
-    ];
+    // Vérifier si tous les fichiers sont uploadés
+    const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
 
-    const currentIndex = statusOrder.indexOf(booking.status);
+    const getStepStatus = (stepName: string) => {
+      switch (stepName) {
+        case 'Booking Requested':
+          return { completed: true, date: "May 5, 5:54 AM" };
+        case 'Photographer Assigned':
+          return {
+            completed: isAccepted || allFilesUploaded,
+            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending"
+          };
+        case 'Shoot':
+          return {
+            completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
+            inProgress: shootStatus === 'shooting' && !allFilesUploaded,
+            upcoming: shootStatus === 'ready' && !allFilesUploaded,
+            date: allFilesUploaded
+              ? "Completed"
+              : shootStatus === 'completed' || shootStatus === 'uploading'
+                ? "Completed"
+                : shootStatus === 'shooting'
+                  ? "In Progress"
+                  : shootStatus === 'ready'
+                    ? "Ready to Start"
+                    : "Starts Soon"
+          };
+        case 'Editing':
+          const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
+
+          return {
+            completed: allFilesUploaded,
+            inProgress: hasUploadedFiles && !allFilesUploaded,
+            date: allFilesUploaded
+              ? "All Files Uploaded - Complete"
+              : hasUploadedFiles
+                ? "Upload in Progress"
+                : "Not Started Yet"
+          };
+        case 'Order Delivery':
+          return {
+            completed: allFilesUploaded,
+            date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025"
+          };
+        default:
+          return { completed: false, date: "Pending" };
+      }
+    };
 
     return [
       {
@@ -240,67 +269,42 @@ export default function BookingDetailsPage() {
     ];
   };
 
-  // Fetch messages when chat modal opens
-  const fetchMessages = async () => {
-    if (!id) return;
-
-    try {
-      setLoadingMessages(true);
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages?bookingId=${id}`, {
-        credentials: 'include',
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        const formattedMessages = data.messages.map((msg: any) => ({
-          id: msg.id,
-          text: msg.text,
-          sender: msg.senderId === session?.user?.id ? 'user' : 'support',
-          timestamp: new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        }));
-        setMessages(formattedMessages);
-      }
-    } catch (error) {
-      console.error('Error fetching messages:', error);
-    } finally {
-      setLoadingMessages(false);
+  // Message handlers
+  const handleSendMessage = () => {
+    if (newMessage.trim()) {
+      setMessages([
+        ...messages,
+        {
+          id: Date.now().toString(),
+          text: newMessage,
+          sender: 'user',
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+      setNewMessage("");
     }
   };
 
-  // Message handlers
-  const handleSendMessage = async () => {
-    if (!newMessage.trim() || !booking) return;
+  const handleAcceptBooking = () => {
+    setIsAccepted(true);
+    setShootStatus('waiting');
+    // Update booking status to active
+    setBooking(prev => prev ? { ...prev, status: 'PHOTOGRAPHER_ASSIGNED' } : null);
+  };
 
-    try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          bookingId: id,
-          receiverId: booking.client.id,
-          text: newMessage,
-        }),
-      });
+  const handleStartShoot = () => {
+    setShootStatus('shooting');
+    setShootStartTime(new Date());
+    setShootingTime({ hours: 0, minutes: 0, seconds: 0 });
+  };
 
-      if (response.ok) {
-        const data = await response.json();
-        setMessages([
-          ...messages,
-          {
-            id: data.message.id,
-            text: data.message.text,
-            sender: 'user',
-            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-          }
-        ]);
-        setNewMessage("");
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
-    }
+  const handleFinishShoot = () => {
+    setShootStatus('completed');
+    // Stop the timer by not updating shootStartTime
+  };
+
+  const handleShootCompleted = () => {
+    setShootStatus('uploading');
   };
 
   const handleReschedule = () => {
@@ -308,64 +312,74 @@ export default function BookingDetailsPage() {
     setIsRescheduleModalOpen(false);
   };
 
-  const handleCancel = () => {
-    console.log("Cancelling with reason:", cancelReason);
-    setIsCancelModalOpen(false);
-  };
-
-  const handleRejectBooking = async () => {
+  const handleCancel = async () => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/reject`, {
-        method: 'POST',
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reason: cancelReason })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: cancelReason,
+          action: 'CANCEL'
+        })
       });
 
-      if (res.ok) {
-        const updated = await res.json();
-        setBooking(updated);
-        router.push('/dash/photographer');
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to reject booking');
+      if (!response.ok) {
+        throw new Error('Failed to cancel booking');
       }
+      setIsCancelModalOpen(false);
+      setCancelReason("");
+
+      handleRejectBooking();
+
     } catch (error) {
-      console.error('Error rejecting booking:', error);
-      alert('Failed to reject booking');
+      alert("Failed to cancel booking. Please try again.");
     }
   };
 
-  // Fetch messages when chat modal opens
-  useEffect(() => {
-    if (isChatModalOpen) {
-      fetchMessages();
-    }
-  }, [isChatModalOpen]);
+  const handleUploadProgress = (section: string, hasFiles: boolean) => {
+    setUploadProgress(prev => {
+      const newProgress = { ...prev, [section]: hasFiles };
+      return newProgress;
+    });
+  };
 
-  const handleAcceptBooking = async () => {
+  const confirmRejectBooking = async () => {
+    if (!id) return;
+
     try {
-      setIsAccepting(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/accept`, {
-        method: 'POST',
+      // 1. Call API to reject booking
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: 'DELETE',
         credentials: 'include',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          reason: cancelReason,
+          action: 'REJECT'
+        })
       });
 
-      if (res.ok) {
-        const updated = await res.json();
-        setBooking(updated);
-        // Open chat modal after successful acceptance
-        setIsChatModalOpen(true);
-      } else {
-        const err = await res.json();
-        alert(err.error || 'Failed to accept booking');
-      }
+      if (!response.ok) throw new Error('Failed to reject booking');
+
+      setIsRejectModalOpen(false);
+      handleRejectBooking();
+
     } catch (error) {
-      console.error('Error accepting booking:', error);
-      alert('Failed to accept booking');
-    } finally {
-      setIsAccepting(false);
+      console.error('Rejection error:', error);
+    }
+  };
+
+  const handleRejectBooking = () => {
+    const storedPreviousPath = sessionStorage.getItem('previousPath');
+
+    if (storedPreviousPath && storedPreviousPath !== window.location.pathname) {
+      router.push(storedPreviousPath);
+    } else {
+      router.push('/dash/photographer');
     }
   };
 
@@ -377,10 +391,10 @@ export default function BookingDetailsPage() {
     );
   }
 
-  if (!booking || !booking.package) {
+  if (!booking) {
     return (
       <div className="p-4 text-center text-gray-500">
-        {!booking ? 'Booking not found' : 'Booking data incomplete'}
+        Booking not found
       </div>
     );
   }
@@ -389,17 +403,13 @@ export default function BookingDetailsPage() {
     if (isAccepted) {
       return "bg-green-100 text-green-800";
     }
-    
+
     switch (status.toLowerCase()) {
       case "completed":
         return "bg-green-100 text-green-800";
       case "booking_created":
       case "scheduled":
         return "bg-yellow-100 text-yellow-800";
-      case "photographer_assigned":
-        return "bg-orange-100 text-orange-800";
-      case "photographer_accepted":
-        return "bg-emerald-100 text-emerald-800";
       case "upcoming":
         return "bg-yellow-100 text-yellow-800";
       case "shooting":
@@ -416,9 +426,9 @@ export default function BookingDetailsPage() {
     if (isAccepted) {
       return "Active";
     }
-    return booking.status === 'BOOKING_CREATED' 
-    ? 'Upcoming' 
-    : booking.status.replace(/_/g, ' ').toLowerCase();
+    return booking.status === 'BOOKING_CREATED'
+      ? 'Upcoming'
+      : booking.status.replace(/_/g, ' ').toLowerCase();
   };
 
   console.log('test booking', booking)
@@ -426,8 +436,8 @@ export default function BookingDetailsPage() {
   // Mock photographer data when accepted
   const getPhotographerName = () => {
     if (isAccepted || booking.photographer) {
-      return booking.photographer 
-        ? `${booking.photographer.firstname} ${booking.photographer.lastname}` 
+      return booking.photographer
+        ? `${booking.photographer.firstname} ${booking.photographer.lastname}`
         : 'Michael Philips';
     }
     return 'Not assigned yet';
@@ -448,7 +458,7 @@ export default function BookingDetailsPage() {
             <span>{getStatusText()}</span>
           </div>
         </div>
-        <div className="border-b mb-3 mt-3"/>
+        <div className="border-b mb-3 mt-3" />
 
         <div className={`grid gap-8 mb-4 ${isAccepted ? 'grid-cols-3' : 'grid-cols-2'}`}>
           <div>
@@ -477,44 +487,231 @@ export default function BookingDetailsPage() {
           )}
         </div>
         <hr className="mb-4" />
-        <div className="grid gap-4 grid-cols-4">
+
+        {!isAccepted ? (
+        <div className="grid gap-4 grid-cols-2">
           <button
-            onClick={handleAcceptBooking}
-            disabled={isAccepting || booking.status !== 'PHOTOGRAPHER_ASSIGNED'}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg text-white bg-[#12B76A] hover:bg-[#12B76A]/90 disabled:opacity-50 disabled:cursor-not-allowed
-              shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+            onClick={!isAccepted ? handleAcceptBooking : undefined}
+            disabled={isAccepted}
+            className={`text-sm justify-center flex items-center gap-2 px-4 py-2 rounded-lg transition-all duration-300 ease-in-out ${isAccepted
+              ? "bg-gray-100 text-gray-500 cursor-not-allowed "
+              : "bg-[#12B76A] text-white hover:bg-[#12B76A]/90"
+              }`}
           >
-            {isAccepting ? 'Accepting...' : booking.status === 'PHOTOGRAPHER_ACCEPTED' ? 'Booking Accepted' : 'Accept Booking'}
+            {isAccepted ? (
+              <>
+                Pending
+                <span className="ml-2 flex space-x-1">
+                  <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:0ms]" />
+                  <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce [animation-delay:300ms]" />
+                </span>
+              </>
+            ) : (
+              "Accept Booking"
+            )}
           </button>
-          <button 
-            onClick={() => setIsRescheduleModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
+          <button
+            onClick={() => {
+              setIsRejectModalOpen(true);
+            }}
+            className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-[#CC3A30] border-red-300 hover:bg-gray-50"
           >
-            <Calendar className="h-4 w-4" />
-            Reschedule Booking
-          </button>
-          <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border-t border-l border-r rounded-lg text-gray-700 hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]">
-            <NotebookText className="h-4 w-4" />
-            Add Notes
-          </button>
-          <button 
-            onClick={() => setIsCancelModalOpen(true)}
-            className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-red-600 border-red-300 rounded-lg hover:bg-gray-50 shadow-[inset_0_1.5px_0_0_#FFFFFF48,inset_-1.5px_0_0_0_#FFFFFF20,inset_1.5px_0_0_0_#FFFFFF20,inset_0_-2px_0_0_#FFFFFF20,inset_0_-2px_0_0_#00000030]"
-          >
-            <XSquare className="h-4 w-4" /> 
-            Cancel Booking
+            <XSquare className="h-4 w-4" />
+            Reject Booking
           </button>
         </div>
+        ) : (
+        <div className="grid gap-4 grid-cols-3">
+            <button
+              onClick={() => setIsRescheduleModalOpen(true)}
+              className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
+            >
+              <Calendar className="h-4 w-4" />
+              Reschedule Booking
+            </button>
+            <button className="text-sm justify-center flex items-center gap-2 px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50">
+              <NotebookText className="h-4 w-4" />
+              Add Notes
+            </button>
+            <button
+              onClick={() => {
+                setIsCancelModalOpen(true);
+              }}
+              className="text-sm justify-center flex items-center gap-2 px-4 py-2 text-[#CC3A30] border border-[#F9AFA9] rounded-lg hover:bg-[#fff4f4]"
+            >
+              <XSquare className="h-4 w-4" />
+              Cancel Booking
+            </button>
+          </div>
+        )}
       </div>
 
-      <UploadWork
-        bookingId={id as string}
-        onFileUpload={(section, files) => {
-          console.log(`Uploading files for ${section}:`, files);
-          // Files will be uploaded by the UploadWork component
-        }}
-      />
-      {/* <Payement_Details/> */}
+      {/* Status Section - Only shown when accepted */}
+      { isAccepted && (
+        <>
+          <div className="bg-white rounded-lg border border-[#DBDCDF] px-6 py-3">
+            <h3 className="text-lg font-semibold mb-2">Status</h3>
+
+            {/* Progress Steps */}
+            <hr className="mb-4 text-[#DBDCDF]" />
+
+            {/* Progress Steps */}
+            <div className="flex items-start justify-between mb-1">
+              {statusSteps.map((step, index) => (
+                <div key={index} className="flex flex-col relative flex-1">
+                  {/* Progress Line */}
+                  {index < statusSteps.length - 1 && (
+                    <div
+                      className={`absolute top-3 h-0.5 ${step.inProgress
+                        ? 'bg-[#F79009]'
+                        : step.completed
+                          ? 'bg-[#0F9C5A]'
+                          : 'bg-gray-300'
+                        }`}
+                      style={{
+                        height: '3px',
+                        left: '32px', // Start after the circle
+                        right: '0', // Extend to the right edge
+                        width: 'calc(100% - 40px)', // Full width minus circle diameter
+                        borderRadius: '9px',
+                        zIndex: 0,
+                      }}
+                    />
+                  )}
+
+                  {/* Circle */}
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 relative z-10 ${step.completed
+                    ? 'bg-[#0F9C5A] text-white'
+                    : step.inProgress
+                      ? 'bg-[#F79009] text-white animate-pulse'
+                      : step.upcoming
+                        ? 'bg-[#F79009] text-white'
+                        : 'bg-gray-200 text-gray-400'
+                    }`}>
+                    {step.completed ? (
+                      <Check className="h-4 w-4" />
+                    ) : (
+                      <div className="w-2 h-2 bg-current rounded-full" />
+                    )}
+                  </div>
+
+                  {/* Label and Date */}
+                  <div className="text-left">
+                    <p className="text-sm font-medium text-gray-900 mb-1">{step.label}</p>
+                    <p className="text-xs text-gray-500">{step.date}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Shooting Section - Show timer or UploadWork */}
+          {shootStatus !== 'uploading' ? (
+            <div className="bg-white rounded-lg border border-[#DBDCDF] px-6 py-3">
+              <h3 className="text-lg font-semibold mb-2">Shooting</h3>
+
+              <hr className="mb-4 text-[#DBDCDF]" />
+
+              <div className="bg-[#F5F6F6] rounded-lg p-5 text-center">
+                {shootStatus === 'waiting' && (
+                  <>
+                    <p className="text-base text-[#101828] font-medium mb-4">Shoot Starts in</p>
+                    <div className="flex items-center justify-center gap-4 text-4xl font-bold text-[#0F553E] mb-6">
+                      <div className="text-center">
+                        <div>{countdown.hours.toString().padStart(2, '0')}</div>
+                        <div className="text-xs text-[#0F553E] font-normal">Hours</div>
+                      </div>
+                      <div className="text-[#0F553E]">:</div>
+                      <div className="text-center">
+                        <div>{countdown.minutes.toString().padStart(2, '0')}</div>
+                        <div className="text-xs text-[#0F553E] font-normal">Mins</div>
+                      </div>
+                      <div className="text-[#0F553E]">:</div>
+                      <div className="text-center">
+                        <div>{countdown.seconds.toString().padStart(2, '0')}</div>
+                        <div className="text-xs text-[#0F553E] font-normal">Secs</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {(shootStatus === 'ready' || shootStatus === 'shooting' || shootStatus === 'completed') && (
+                  <>
+                    <p className="text-base text-[#101828] font-medium mb-4">
+                      {shootStatus === 'shooting' ? 'Shooting Time' : 'Shoot Starts in'}
+                    </p>
+                    <div className="flex items-center justify-center gap-4 text-4xl font-bold text-[#CC3A30] mb-6">
+                      <div className="text-center">
+                        <div>
+                          {shootStatus === 'shooting' || shootStatus === 'completed'
+                            ? shootingTime.hours.toString().padStart(2, '0')
+                            : '00'
+                          }
+                        </div>
+                        <div className="text-xs text-[#CC3A30] font-normal">Hours</div>
+                      </div>
+                      <div className="text-[#CC3A30]">:</div>
+                      <div className="text-center">
+                        <div>
+                          {shootStatus === 'shooting' || shootStatus === 'completed'
+                            ? shootingTime.minutes.toString().padStart(2, '0')
+                            : '00'
+                          }
+                        </div>
+                        <div className="text-xs text-[#CC3A30] font-normal">Mins</div>
+                      </div>
+                      <div className="text-[#CC3A30]">:</div>
+                      <div className="text-center">
+                        <div>
+                          {shootStatus === 'shooting' || shootStatus === 'completed'
+                            ? shootingTime.seconds.toString().padStart(2, '0')
+                            : '00'
+                          }
+                        </div>
+                        <div className="text-xs text-[#CC3A30] font-normal">Secs</div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                {/* Dynamic Button based on shoot status */}
+                {shootStatus === 'ready' && (
+                  <button
+                    onClick={handleStartShoot}
+                    className="px-24 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-[#fcfcfc] text-sm font-normal flex items-center gap-2 mx-auto"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                    Start Shoot Now
+                  </button>
+                )}
+
+                {shootStatus === 'shooting' && (
+                  <button
+                    onClick={handleFinishShoot}
+                    className="px-24 py-2 bg-[#CC3A30] text-white rounded-lg hover:bg-[#e23f36] text-sm font-normal flex items-center gap-2 mx-auto"
+                  >
+                    <CheckCircle className="h-4 w-4" color="white" />
+                    Finish Shoot
+                  </button>
+                )}
+
+                {shootStatus === 'completed' && (
+                  <button
+                    onClick={handleShootCompleted}
+                    className="px-24 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm font-normal flex items-center gap-2 mx-auto"
+                  >
+                    <CheckCircle className="h-4 w-4" color="white" />
+                    Shoot Completed
+                  </button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <UploadWork onUploadProgress={handleUploadProgress} />
+          )}
+        </>
+      )}
 
       {/* Reschedule Modal */}
       {isRescheduleModalOpen && (
@@ -564,9 +761,8 @@ export default function BookingDetailsPage() {
                   {timeSlots.map((slot) => (
                     <div
                       key={slot.id}
-                      className={`p-4 border rounded-lg cursor-pointer ${
-                        selectedTimeSlot === slot.time ? 'border-emerald-500 bg-emerald-50' : ''
-                      }`}
+                      className={`p-4 border rounded-lg cursor-pointer ${selectedTimeSlot === slot.time ? 'border-emerald-500 bg-emerald-50' : ''
+                        }`}
                       onClick={() => setSelectedTimeSlot(slot.time)}
                     >
                       <div className="flex justify-between items-center">
@@ -618,8 +814,9 @@ export default function BookingDetailsPage() {
               </button>
             </div>
             <div className="p-6">
-              <p className="text-gray-600 mb-4">
-                Are you sure you want to cancel this booking? This action cannot be undone.
+              <p className="text-red-600 font-semibold mb-4">
+                Are you sure you want to cancel this booking?<br />
+                ⚠️ This action cannot be undone.
               </p>
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -666,37 +863,25 @@ export default function BookingDetailsPage() {
               </button>
             </div>
             <div className="flex-1 p-6 overflow-y-auto space-y-4">
-              {loadingMessages ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-600"></div>
-                </div>
-              ) : messages.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-gray-500">
-                  <p>No messages yet. Start the conversation!</p>
-                </div>
-              ) : (
-                messages.map((message) => (
+              {messages.map((message) => (
+                <div
+                  key={message.id}
+                  className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
                   <div
-                    key={message.id}
-                    className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-lg p-3 ${
-                        message.sender === 'user'
-                          ? 'bg-emerald-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                    className={`max-w-[80%] rounded-lg p-3 ${message.sender === 'user'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
                       }`}
-                    >
-                      <p>{message.text}</p>
-                      <p className={`text-xs mt-1 ${
-                        message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
+                  >
+                    <p>{message.text}</p>
+                    <p className={`text-xs mt-1 ${message.sender === 'user' ? 'text-emerald-100' : 'text-gray-500'
                       }`}>
-                        {message.timestamp}
-                      </p>
-                    </div>
+                      {message.timestamp}
+                    </p>
                   </div>
-                ))
-              )}
+                </div>
+              ))}
             </div>
             <div className="p-4 border-t">
               <div className="flex gap-2">
@@ -717,6 +902,51 @@ export default function BookingDetailsPage() {
                   className="p-2 bg-emerald-600 text-white rounded-lg"
                 >
                   <Send className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isRejectModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg w-[500px]">
+            <div className="p-6 border-b flex justify-between items-center">
+              <h2 className="text-xl font-semibold">Reject Booking</h2>
+              <button onClick={() => setIsRejectModalOpen(false)}>
+                <X className="h-5 w-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-yellow-600 font-semibold mb-4">
+                Are you sure you want to reject this booking?<br />
+                This action cannot be undone.
+              </p>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for Rejection
+                </label>
+                <textarea
+                  className="w-full rounded-lg border border-gray-300 px-4 py-2"
+                  rows={4}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  placeholder="Please provide a reason for rejection..."
+                />
+              </div>
+              <div className="flex justify-end gap-4">
+                <button
+                  onClick={() => setIsRejectModalOpen(false)}
+                  className="px-4 py-2 border rounded-lg text-gray-600"
+                >
+                  Keep Booking
+                </button>
+                <button
+                  onClick={confirmRejectBooking}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg"
+                >
+                  Reject Booking
                 </button>
               </div>
             </div>

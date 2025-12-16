@@ -12,7 +12,7 @@ export interface Booking {
   updatedAt: string;
   clientId: string;
   photographerId: string | null;
-  status: "BOOKING_CREATED" |"PHOTOGRAPHER_ASSIGNED"| "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED";
+  status: "BOOKING_CREATED" |"PHOTOGRAPHER_ASSIGNED"| "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED" | "REJECTED";
   packageId: number;
   propertyType: string;
   propertySize: string;
@@ -111,7 +111,9 @@ export default function BookingsPage() {
   }, [status]);
 
   const pendingBookings = bookings.filter(booking => booking.status === 'EDITING');
-  const upcomingBookings = bookings.filter(booking => booking.status !== "COMPLETED");
+  const upcomingBookings = bookings.filter(booking => 
+    !(booking.status === "COMPLETED" || booking.status === "CANCELLED" || booking.status === "REJECTED")
+  );
   const completedBookings = bookings.filter(booking => booking.status === "COMPLETED");
 
 

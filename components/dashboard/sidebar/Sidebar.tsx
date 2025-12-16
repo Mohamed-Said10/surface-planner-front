@@ -6,7 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { UserRole } from "@/components/types/user";
 import { cn } from "@/lib/utils";
-import { DollarCircle, DollarCircleFull, CameraTool, CameraToolFull, CalendarDays, CalendarDaysFull, Home, HomeFull, Completedprojects, CompletedprojectsFull, Settings, Support, Message, MessageFull } from '@/components/icons';
+import { DollarCircle, DollarCircleFull,CameraTool,CameraToolFull, CalendarDays, CalendarDaysFull, Home, HomeFull, Completedprojects, CompletedprojectsFull, Settings, Support } from '@/components/icons';
 import { DashIcon } from "@radix-ui/react-icons";
 
 
@@ -14,19 +14,16 @@ const ROLE_PATHS = {
   CLIENT: {
     base: '/dash/client',
     bookings: '/dash/client/bookings',
-    messages: '/dash/client/messages',
     projects: '/dash/client/completed'
   },
   PHOTOGRAPHER: {
     base: '/dash/photographer',
     bookings: '/dash/photographer/bookings',
-    messages: '/dash/photographer/messages',
     projects: '/dash/photographer/payments',
   },
   ADMIN: {
     base: '/dash/admin',
     bookings: '/dash/admin/bookings',
-    messages: '/dash/admin/messages',
     projects: '/dash/admin/completed',
     photographers: '/dash/admin/photographers',
     payments: '/dash/admin/payments',
@@ -48,17 +45,9 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // Get user role safely, with fallback
-  const userRole = (session?.user?.role as UserRole) || null;
-
-  // Only get role paths if we have a valid user role
-  const rolePaths = userRole ? getRolePaths(userRole) : null;
-  const base = rolePaths?.base || '';
-  const bookings = rolePaths?.bookings || '';
-  const messages = rolePaths?.messages || '';
-  const projects = rolePaths?.projects || '';
-  const photographers = 'photographers' in (rolePaths || {}) ? (rolePaths as typeof ROLE_PATHS.ADMIN).photographers : '';
-  const support = 'support' in (rolePaths || {}) ? (rolePaths as typeof ROLE_PATHS.ADMIN).support : '';
+  // const userRole = (session?.user?.role as UserRole); 
+  const userRole = 'PHOTOGRAPHER' as UserRole;
+  const { base, bookings, projects, photographers, support  } = getRolePaths(userRole);
   const activePath = userRole === 'ADMIN' ? photographers : projects;
 
   // Helper functions
@@ -68,7 +57,6 @@ export default function Sidebar() {
   };
 
   const isActive = (path: string) => {
-    if (!base) return false;
     // Exact match for base dashboard route
     if (path === base) {
       return pathname === base;
@@ -89,7 +77,7 @@ export default function Sidebar() {
   };
 
   useEffect(() => {
-    if (status !== 'authenticated' || !userRole || !base) return;
+    if (status !== 'authenticated') return;
 
     // If path is a common route, allow access
     if (COMMON_ROUTES.some(route => pathname.startsWith(route))) {
@@ -122,8 +110,7 @@ export default function Sidebar() {
     }
   }, [pathname, status, userRole, router, base]);
 
-  // Early return AFTER all hooks have been called
-  if (status !== 'authenticated' || !session?.user?.role) return null;
+  if (status !== 'authenticated') return null;
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
@@ -168,24 +155,7 @@ export default function Sidebar() {
           )}
           {userRole === 'ADMIN' ? 'Bookings' : 'My Bookings'}
         </button>
-
-        <button
-          onClick={() => handleNavigation(messages)}
-          className={cn(
-            "w-full flex items-center text-sm px-4 py-2 rounded-lg text-left transition-colors",
-            isActive(messages)
-              ? "bg-gray-100 text-[#0F553E]"
-              : "text-[#646973] hover:bg-gray-100"
-          )}
-        >
-          {isActive(messages) ? (
-            <MessageFull className="h-5 w-5 mr-3" />
-          ) : (
-            <Message className="h-5 w-5 mr-3" />
-          )}
-          Messages
-        </button>
-
+          
         <button
           onClick={() => handleNavigation(userRole === 'ADMIN' ? photographers : projects)}
           
