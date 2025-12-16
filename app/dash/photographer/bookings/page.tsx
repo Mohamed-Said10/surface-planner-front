@@ -12,7 +12,7 @@ export interface Booking {
   updatedAt: string;
   clientId: string;
   photographerId: string | null;
-  status: "BOOKING_CREATED" |"PHOTOGRAPHER_ASSIGNED"| "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED" | "REJECTED";
+  status: "BOOKING_CREATED" | "PHOTOGRAPHER_ASSIGNED" | "PHOTOGRAPHER_ACCEPTED" | "SHOOTING" | "EDITING" | "COMPLETED" | "CANCELLED" | "REJECTED";
   packageId: number;
   propertyType: string;
   propertySize: string;

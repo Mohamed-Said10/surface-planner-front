@@ -7,6 +7,7 @@ import { RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Search } from "@/components/icons";
 import { Photo, Video, Virtual } from "@/components/icons/addOns";
+import { getStatusColor, formatStatus, formatDate } from "@/helpers/bookingStatusHelper";
 
 interface Booking {
   id: string;
@@ -73,45 +74,6 @@ export default function BookingsPage() {
       fetchBookings();
     }
   }, [status]);
-
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case "completed":
-        return "bg-green-100 text-green-800";
-      case "scheduled":
-      case "booking_created":
-        return "bg-yellow-100 text-yellow-800";
-      case "canceled":
-        return "bg-red-100 text-red-800";
-      case "shoot_done":
-      case "shoot done":
-      case "booking_created":
-        return "bg-blue-100 text-blue-800";
-      case "editing":
-        return "bg-purple-100 text-purple-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const formatStatus = (status: string) => {
-    return status
-      .toLowerCase()
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
-  };
-
-  const formatDate = (dateString: string) => {
-    const options: Intl.DateTimeFormatOptions = {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    };
-    return new Date(dateString).toLocaleDateString("en-US", options);
-  };
 
   const filteredBookings = bookings.filter((booking) => {
     const searchLower = searchTerm.toLowerCase();

@@ -208,6 +208,11 @@ export default function BookingDetailsPage() {
             completed: isAccepted || allFilesUploaded,
             date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending"
           };
+        case 'Photographer Accepted':
+          return {
+            completed: isAccepted || allFilesUploaded,
+            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending"
+          };
         case 'Shoot':
           return {
             completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
@@ -253,6 +258,10 @@ export default function BookingDetailsPage() {
       {
         label: "Photographer Assigned",
         ...getStepStatus('Photographer Assigned')
+      },
+      {
+        label: "Photographer Accepted",
+        ...getStepStatus('Photographer Accepted')
       },
       {
         label: "Shoot",
@@ -412,6 +421,10 @@ export default function BookingDetailsPage() {
         return "bg-yellow-100 text-yellow-800";
       case "upcoming":
         return "bg-yellow-100 text-yellow-800";
+      case "photographer_assigned":
+        return "bg-indigo-100 text-indigo-800";
+      case "photographer_accepted":
+        return "bg-teal-100 text-teal-800";
       case "shooting":
       case "shoot in progress":
         return "bg-blue-100 text-blue-800";

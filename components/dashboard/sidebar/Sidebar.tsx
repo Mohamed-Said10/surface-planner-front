@@ -45,8 +45,15 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
 
-  // const userRole = (session?.user?.role as UserRole); 
-  const userRole = 'PHOTOGRAPHER' as UserRole;
+  // Get user role safely, with fallback
+  const userRole = (session?.user?.role as UserRole) || null;
+
+  // Return early if no valid role
+  if (!userRole || !ROLE_PATHS[userRole]) {
+    return null;
+  }
+
+  // const userRole = 'PHOTOGRAPHER' as UserRole;
   const { base, bookings, projects, photographers, support  } = getRolePaths(userRole);
   const activePath = userRole === 'ADMIN' ? photographers : projects;
 

@@ -38,13 +38,14 @@ export interface Booking {
 export const statusMap: Record<string, string> = {
   BOOKING_CREATED: "Booking Requested",
   PHOTOGRAPHER_ASSIGNED: "Photographer Assigned",
+  PHOTOGRAPHER_ACCEPTED: "Photographer Accepted",
   SHOOTING: "Shoot in Progress",
   EDITING: "Editing",
   COMPLETED: "Order Delivery",
 }
 
 // All possible statuses in order
-export const allStatuses = ["BOOKING_CREATED", "PHOTOGRAPHER_ASSIGNED", "SHOOTING", "EDITING", "COMPLETED"]
+export const allStatuses = ["BOOKING_CREATED", "PHOTOGRAPHER_ASSIGNED", "PHOTOGRAPHER_ACCEPTED", "SHOOTING", "EDITING", "COMPLETED"]
 
 /**
  * Transforms status history data into a format suitable for UI display
@@ -191,6 +192,10 @@ export function getStatusColor(status: string) {
     case "booking_created":
     case "scheduled":
       return "bg-yellow-100 text-yellow-800"
+    case "photographer_assigned":
+      return "bg-indigo-100 text-indigo-800"
+    case "photographer_accepted":
+      return "bg-teal-100 text-teal-800"
     case "shoot_done":
     case "shoot in progress":
     case "shooting":
