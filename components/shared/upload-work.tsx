@@ -317,6 +317,9 @@ interface UploadWorkProps {
 
 export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }: UploadWorkProps) {
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [submitError, setSubmitError] = useState<string>("")
+  const [submitSuccess, setSubmitSuccess] = useState(false)
 
   const handleSectionUpload = (section: string) => async (files: FileList) => {
     console.log(`Files uploaded to ${section}:`, files)
@@ -357,6 +360,47 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
       onFileUpload(section, files)
     }
   }
+
+  const handleSubmitWork = async () => {
+    if (!bookingId) {
+      setSubmitError("Booking ID is required");
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    setSubmitSuccess(false);
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/status`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'COMPLETED',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.details || 'Failed to submit work');
+      }
+
+      setSubmitSuccess(true);
+
+      // Reload page after 2 seconds to show updated status
+      setTimeout(() => {
+        window.location.reload();
+      }, 2000);
+    } catch (error) {
+      console.error("Error submitting work:", error);
+      setSubmitError(error instanceof Error ? error.message : 'Failed to submit work');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const uploadSections = [
     {
@@ -414,6 +458,29 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
             onUploadProgress={onUploadProgress}
           />
         ))}
+      </div>
+
+      {/* Submit Button */}
+      <div className="mt-6 pt-6 border-t border-gray-200">
+        {submitSuccess && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+            Work submitted successfully! The booking status has been updated to Completed.
+          </div>
+        )}
+
+        {submitError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {submitError}
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmitWork}
+          disabled={isSubmitting || submitSuccess}
+          className="w-full py-3 px-6 bg-[#0F553E] hover:bg-[#0F553E]/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {isSubmitting ? 'Submitting...' : submitSuccess ? 'Work Submitted!' : 'Submit Work & Complete Booking'}
+        </button>
       </div>
     </div>
   )

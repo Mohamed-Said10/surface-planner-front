@@ -191,9 +191,21 @@ export default function BookingDetailsPage() {
       const transformedData = transformStatusHistoryArray(data);
       setBookingStatus(transformedData);
 
-      // Check if photographer has accepted based on status history
+      // Get the current status from the most recent status history entry
+      const currentStatus = data[0]?.status;
+
+      // Sync local UI state with backend status
       const hasAcceptedStatus = data.some((item: any) => item.status === 'PHOTOGRAPHER_ACCEPTED');
       setIsAccepted(hasAcceptedStatus);
+
+      // Set shoot status based on current backend status
+      if (currentStatus === 'EDITING' || currentStatus === 'COMPLETED') {
+        setShootStatus('uploading'); // Show upload form when in EDITING or COMPLETED status
+      } else if (currentStatus === 'SHOOTING') {
+        setShootStatus('shooting');
+      } else if (hasAcceptedStatus) {
+        setShootStatus('waiting');
+      }
     } catch (err) {
       console.error("Status fetch error:", err);
     } finally {
@@ -768,7 +780,7 @@ export default function BookingDetailsPage() {
               </div>
             </div>
           ) : (
-            <UploadWork onUploadProgress={handleUploadProgress} />
+            <UploadWork bookingId={id as string} onUploadProgress={handleUploadProgress} />
           )}
         </>
       )}
