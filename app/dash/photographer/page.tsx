@@ -3,7 +3,7 @@ import { useSession } from 'next-auth/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import BookingsTable from '@/components/shared/bookingsTable';
 import { BookingCalendar } from '@/components/shared/BookingCalendar';
-import { DollarSign, DollarCircle, CalendarDays, Star } from '@/components/icons';
+import { DollarSign, DollarCircle, CalendarDays, Star, CheckCircle } from '@/components/icons';
 import { useRouter } from "next/navigation";
 import { X, Ellipsis } from "lucide-react";
 
@@ -66,6 +66,14 @@ export interface Booking {
     lastname: string;
     email?: string;
   } | null;
+
+  statusHistory?: {
+    id: string;
+    bookingId: string;
+    status: string;
+    userId: string;
+    createdAt: string;
+  }[];
 }
 
 export default function HomePage() {
@@ -111,11 +119,36 @@ export default function HomePage() {
   }, [session]);
 
   // Handle Accept booking
-  const handleAcceptBooking = (bookingId: string) => {
-    // router.push(`/dash/photographer/booking-details/${bookingId}`);
+  const handleAcceptBooking = async (bookingId: string) => {
+    console.log('Accept clicked for booking:', bookingId);
+    
     setHoldingBookings(prev => new Set([...prev, bookingId]));
 
+    try {
+      const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/accept`;
+      console.log('Making API call to:', apiUrl);
 
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      console.log('Response status:', response.status);
+
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        console.log('Booking accepted successfully:', data);
+      }
+    } catch (error) {
+      console.error('Error accepting booking:', error);
+    }
+
+    // Always redirect regardless of API success/failure
+    console.log('Redirecting to booking details...');
+    router.push(`/dash/photographer/booking-details/${bookingId}?autoAccept=true`);
   };
 
   // Alternative approach using FLIP technique (Recommended)
@@ -214,6 +247,26 @@ export default function HomePage() {
         if (!data) return;
 
         setBookings(data.bookings);
+
+        // Check which bookings are already accepted by this photographer
+        const alreadyAccepted = new Set<string>();
+        data.bookings.forEach((booking: Booking) => {
+          // Check if booking has statusHistory with PHOTOGRAPHER_ACCEPTED
+          const hasAccepted = booking.statusHistory?.some(
+            (history) => history.status === 'PHOTOGRAPHER_ACCEPTED' && 
+                        history.userId === session?.user?.id
+          );
+          
+          // Or check if current status is PHOTOGRAPHER_ACCEPTED or beyond
+          const isAcceptedStatus = ['PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'].includes(booking.status);
+          
+          if (hasAccepted || isAcceptedStatus) {
+            alreadyAccepted.add(booking.id);
+          }
+        });
+        
+        console.log('Already accepted bookings:', Array.from(alreadyAccepted));
+        setHoldingBookings(alreadyAccepted);
 
         // Calculate dynamic stats
         const activeBookings = data.bookings.filter(
@@ -342,17 +395,7 @@ export default function HomePage() {
                   No bookings available.
                 </div>
               ) : (
-                [...upcomingBookings]
-                  .sort((a, b) => {
-                    // Les bookings "holding" vont en bas
-                    const aHolding = holdingBookings.has(a.id);
-                    const bHolding = holdingBookings.has(b.id);
-
-                    if (aHolding && !bHolding) return 1;
-                    if (!aHolding && bHolding) return -1;
-                    return 0;
-                  })
-                  .map((booking, index) => {
+                upcomingBookings.map((booking, index) => {
                     const isRemoving = removingBookings.has(booking.id);
                     const isHolding = holdingBookings.has(booking.id);
 
@@ -364,10 +407,6 @@ export default function HomePage() {
                             ? 'opacity-0 transform -translate-x-full max-h-0 py-0 overflow-hidden transition-all duration-700 ease-in-out'
                             : 'max-h-24'
                           }`}
-                        style={{
-                          // Ensure smooth transitions don't interfere with our custom animation
-                          willChange: isHolding ? 'transform, opacity' : 'auto'
-                        }}
                       >
                         <div className="flex-1">
                           <button className="text-left">
@@ -380,40 +419,30 @@ export default function HomePage() {
                           </p>
                         </div>
                         <div className="flex gap-2 ml-4">
-                          <button
-                            onClick={() => handleRejectBooking(booking.id)}
-                            className={`px-4 py-2 text-sm font-medium text-[#AA3028] bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF] 
-                            ${isHolding && 'opacity-70'}
-                          `}
-                            disabled={isHolding}
-                          >
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => {
-                              handleAcceptBooking(booking.id);
-                              // Use the FLIP technique for smooth animation
-                              animateBookingRemovalFLIP(booking.id);
-                            }}
-                            className={`px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 shadow-[0_2px_4px_0_#DBDCDF] flex items-center gap-2 ${isHolding
-                                ? 'text-white bg-gray-400 cursor-default'
-                                : 'text-white bg-[#12B76A] hover:bg-green-700'
-                              }`}
-                            disabled={isHolding}
-                          >
-                            {isHolding ? (
-                              <>
-                                Pending
-                                <span className="ml-2 flex space-x-0.5 items-end">
-                                  <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:0ms]" />
-                                  <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:150ms]" />
-                                  <span className="w-1 h-1 bg-white rounded-full animate-bounce [animation-delay:300ms]" />
-                                </span>
-                              </>
-                            ) : (
-                              'Accept'
-                            )}
-                          </button>
+                          {isHolding ? (
+                            <button
+                              onClick={() => router.push(`/dash/photographer/booking-details/${booking.id}`)}
+                              className="px-3 py-2 text-sm font-medium rounded-lg shadow-[0_2px_4px_0_#DBDCDF] flex items-center gap-2 text-white bg-[#12B76A] hover:bg-green-700 transition-colors cursor-pointer"
+                            >
+                              <CheckCircle className="h-4 w-4" color="white" />
+                              Accepted
+                            </button>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => handleRejectBooking(booking.id)}
+                                className="px-4 py-2 text-sm font-medium text-[#AA3028] bg-white border border-gray-300 hover:bg-gray-50 rounded-lg transition-colors shadow-[0_2px_4px_0_#DBDCDF]"
+                              >
+                                Reject
+                              </button>
+                              <button
+                                onClick={() => handleAcceptBooking(booking.id)}
+                                className="px-3 py-2 text-sm font-medium rounded-lg transition-all duration-300 shadow-[0_2px_4px_0_#DBDCDF] flex items-center gap-2 text-white bg-[#12B76A] hover:bg-green-700"
+                              >
+                                Accept
+                              </button>
+                            </>
+                          )}
                         </div>
                       </div>
                     );

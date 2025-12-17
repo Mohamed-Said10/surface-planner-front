@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, Calendar, X, Send, NotebookText, Ellipsis } from "lucide-react";
 import UploadWork from "@/components/shared/upload-work";
@@ -68,18 +68,25 @@ const timeSlots = [
 export default function BookingDetailsPage() {
   const { id } = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const autoAccept = searchParams.get('autoAccept') === 'true';
+  
+  console.log('BookingDetailsPage rendered. autoAccept:', autoAccept);
+  
   const { data: session } = useSession();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
   const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(null);
   const [statusLoading, setStatusLoading] = useState(true);
-  const [isAccepted, setIsAccepted] = useState(false);
+  const [isAccepted, setIsAccepted] = useState(autoAccept);
+  
+  console.log('Initial isAccepted state:', autoAccept);
   const [countdown, setCountdown] = useState({
     hours: 0,
     minutes: 0,
     seconds: 5 // Set to 5 seconds for testing
   });
-  const [shootStatus, setShootStatus] = useState('waiting'); // 'waiting', 'ready', 'shooting', 'completed', 'uploading'
+  const [shootStatus, setShootStatus] = useState(autoAccept ? 'waiting' : 'waiting'); // 'waiting', 'ready', 'shooting', 'completed', 'uploading'
   const [shootingTime, setShootingTime] = useState({
     hours: 0,
     minutes: 0,
@@ -245,6 +252,8 @@ export default function BookingDetailsPage() {
 
   // Fetch booking details - FIXED API CALL
   useEffect(() => {
+    console.log('BookingDetails mounted. autoAccept param:', autoAccept);
+    
     const fetchBookingDetails = async () => {
       if (requestInProgress.current) return;
       requestInProgress.current = true;
@@ -259,7 +268,26 @@ export default function BookingDetailsPage() {
         if (!response.ok) throw new Error('Failed to fetch booking');
 
         const bookingData = await response.json();
+        console.log('Booking data fetched. Status:', bookingData.status, 'autoAccept:', autoAccept);
         setBooking(bookingData);
+        
+        // If autoAccept param is true, show full page (accept already done by dashboard)
+        if (autoAccept) {
+          console.log('Coming from Accept button, showing full page immediately');
+          setIsAccepted(true);
+          setShootStatus('waiting');
+        } else {
+          // No autoAccept param - check if booking is already accepted
+          const inProgressStatuses = ['PHOTOGRAPHER_ACCEPTED', 'SHOOTING', 'EDITING', 'COMPLETED'];
+          
+          if (inProgressStatuses.includes(bookingData.status)) {
+            console.log('Booking already accepted, showing full page');
+            setIsAccepted(true);
+            setShootStatus('waiting');
+          } else {
+            console.log('Booking needs acceptance, showing Accept/Reject buttons');
+          }
+        }
       } catch (error) {
         console.error("Error fetching booking:", error);
       } finally {
@@ -272,7 +300,7 @@ export default function BookingDetailsPage() {
       fetchBookingDetails();
       fetchBookingStatus();
     }
-  }, [session, id, fetchBookingStatus]);
+  }, [session, id, autoAccept, fetchBookingStatus]);
 
   // Status steps based on booking status from API
   const getStatusSteps = (): Array<{
