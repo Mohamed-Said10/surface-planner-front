@@ -1,11 +1,12 @@
 'use client';
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Check, Calendar, X, Send, NotebookText, Ellipsis } from "lucide-react";
 import UploadWork from "@/components/shared/upload-work";
 import { CheckCircle, XSquare } from '@/components/icons';
 import { useRouter } from "next/navigation";
+import { transformStatusHistoryArray, BookingStatus } from "@/helpers/bookingStatusHelper";
 
 interface Booking {
   id: string;
@@ -70,6 +71,8 @@ export default function BookingDetailsPage() {
   const { data: session } = useSession();
   const [booking, setBooking] = useState<Booking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(null);
+  const [statusLoading, setStatusLoading] = useState(true);
   const [isAccepted, setIsAccepted] = useState(false);
   const [countdown, setCountdown] = useState({
     hours: 0,
@@ -162,6 +165,72 @@ export default function BookingDetailsPage() {
     return () => clearInterval(timer);
   }, [shootStatus, shootStartTime]);
 
+  // Fetch booking status from dedicated endpoint
+  const fetchBookingStatus = useCallback(async () => {
+    if (!id) return;
+
+    try {
+      setStatusLoading(true);
+
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/status`, {
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch status");
+      }
+
+      const data = await response.json();
+
+      if (!data || !Array.isArray(data) || data.length === 0) {
+        throw new Error("No booking status data available");
+      }
+
+      // Use the helper function to transform status history
+      const transformedData = transformStatusHistoryArray(data);
+      setBookingStatus(transformedData);
+
+      // Check if photographer has accepted based on status history
+      const hasAcceptedStatus = data.some((item: any) => item.status === 'PHOTOGRAPHER_ACCEPTED');
+      setIsAccepted(hasAcceptedStatus);
+    } catch (err) {
+      console.error("Status fetch error:", err);
+    } finally {
+      setStatusLoading(false);
+    }
+  }, [id]);
+
+  // Update booking status in backend
+  const updateBookingStatus = async (newStatus: string) => {
+    if (!id) return;
+
+    try {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/status`, {
+        method: 'PUT',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Status update error:', errorData);
+        throw new Error(errorData.details || 'Failed to update status');
+      }
+
+      // Refetch status after update
+      await fetchBookingStatus();
+    } catch (error) {
+      console.error("Error updating status:", error);
+      throw error;
+    }
+  };
+
   // Fetch booking details - FIXED API CALL
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -171,7 +240,7 @@ export default function BookingDetailsPage() {
       try {
         setLoading(true);
         // Use the correct endpoint for single booking details
-        const response = await fetch(`/api/bookings/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
           credentials: 'include'
         });
 
@@ -189,93 +258,44 @@ export default function BookingDetailsPage() {
 
     if (session && id) {
       fetchBookingDetails();
+      fetchBookingStatus();
     }
-  }, [session, id]);
+  }, [session, id, fetchBookingStatus]);
 
-  // Status steps based on booking status
-  const getStatusSteps = () => {
-    if (!booking) return [];
+  // Status steps based on booking status from API
+  const getStatusSteps = (): Array<{
+    label: string;
+    date: string;
+    completed: boolean;
+    inProgress: boolean;
+    upcoming?: boolean;
+  }> => {
+    if (!bookingStatus || !bookingStatus.steps) return [];
 
-    // Vérifier si tous les fichiers sont uploadés
+    // Enrich API data with local UI state for interactive features
     const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
 
-    const getStepStatus = (stepName: string) => {
-      switch (stepName) {
-        case 'Booking Requested':
-          return { completed: true, date: "May 5, 5:54 AM" };
-        case 'Photographer Assigned':
-          return {
-            completed: isAccepted || allFilesUploaded,
-            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending"
-          };
-        case 'Photographer Accepted':
-          return {
-            completed: isAccepted || allFilesUploaded,
-            date: (isAccepted || allFilesUploaded) ? "May 5, 8:54 AM" : "Pending"
-          };
-        case 'Shoot':
-          return {
-            completed: shootStatus === 'completed' || shootStatus === 'uploading' || allFilesUploaded,
-            inProgress: shootStatus === 'shooting' && !allFilesUploaded,
-            upcoming: shootStatus === 'ready' && !allFilesUploaded,
-            date: allFilesUploaded
-              ? "Completed"
-              : shootStatus === 'completed' || shootStatus === 'uploading'
-                ? "Completed"
-                : shootStatus === 'shooting'
-                  ? "In Progress"
-                  : shootStatus === 'ready'
-                    ? "Ready to Start"
-                    : "Starts Soon"
-          };
-        case 'Editing':
-          const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
-
-          return {
-            completed: allFilesUploaded,
-            inProgress: hasUploadedFiles && !allFilesUploaded,
-            date: allFilesUploaded
-              ? "All Files Uploaded - Complete"
-              : hasUploadedFiles
-                ? "Upload in Progress"
-                : "Not Started Yet"
-          };
-        case 'Order Delivery':
-          return {
-            completed: allFilesUploaded,
-            date: allFilesUploaded ? "Ready for Delivery" : "Expected May 8, 2025"
-          };
-        default:
-          return { completed: false, date: "Pending" };
+    return bookingStatus.steps.map((step) => {
+      // Add local UI states for Shoot step
+      if (step.label === 'Shoot in Progress' || step.label === 'Shoot') {
+        return {
+          ...step,
+          inProgress: shootStatus === 'shooting' && !allFilesUploaded,
+          upcoming: shootStatus === 'ready' && !allFilesUploaded,
+        };
       }
-    };
 
-    return [
-      {
-        label: "Booking Requested",
-        ...getStepStatus('Booking Requested')
-      },
-      {
-        label: "Photographer Assigned",
-        ...getStepStatus('Photographer Assigned')
-      },
-      {
-        label: "Photographer Accepted",
-        ...getStepStatus('Photographer Accepted')
-      },
-      {
-        label: "Shoot",
-        ...getStepStatus('Shoot')
-      },
-      {
-        label: "Editing",
-        ...getStepStatus('Editing')
-      },
-      {
-        label: "Order Delivery",
-        ...getStepStatus('Order Delivery')
+      // Add local UI states for Editing step
+      if (step.label === 'Editing') {
+        const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
+        return {
+          ...step,
+          inProgress: hasUploadedFiles && !allFilesUploaded,
+        };
       }
-    ];
+
+      return { ...step };
+    });
   };
 
   // Message handlers
@@ -294,25 +314,52 @@ export default function BookingDetailsPage() {
     }
   };
 
-  const handleAcceptBooking = () => {
-    setIsAccepted(true);
-    setShootStatus('waiting');
-    // Update booking status to active
-    setBooking(prev => prev ? { ...prev, status: 'PHOTOGRAPHER_ASSIGNED' } : null);
+  const handleAcceptBooking = async () => {
+    try {
+      // Update status in backend
+      await updateBookingStatus('PHOTOGRAPHER_ACCEPTED');
+
+      // Update local state
+      setIsAccepted(true);
+      setShootStatus('waiting');
+      setBooking(prev => prev ? { ...prev, status: 'PHOTOGRAPHER_ACCEPTED' } : null);
+    } catch (error) {
+      console.error('Failed to accept booking:', error);
+      alert('Failed to accept booking. Please try again.');
+    }
   };
 
-  const handleStartShoot = () => {
-    setShootStatus('shooting');
-    setShootStartTime(new Date());
-    setShootingTime({ hours: 0, minutes: 0, seconds: 0 });
+  const handleStartShoot = async () => {
+    try {
+      // Update status in backend
+      await updateBookingStatus('SHOOTING');
+
+      // Update local state
+      setShootStatus('shooting');
+      setShootStartTime(new Date());
+      setShootingTime({ hours: 0, minutes: 0, seconds: 0 });
+    } catch (error) {
+      console.error('Failed to start shoot:', error);
+      alert('Failed to update status. Please try again.');
+    }
   };
 
-  const handleFinishShoot = () => {
-    setShootStatus('completed');
-    // Stop the timer by not updating shootStartTime
+  const handleFinishShoot = async () => {
+    try {
+      // Update status in backend
+      await updateBookingStatus('EDITING');
+
+      // Update local state
+      setShootStatus('completed');
+    } catch (error) {
+      console.error('Failed to finish shoot:', error);
+      alert('Failed to update status. Please try again.');
+    }
   };
 
-  const handleShootCompleted = () => {
+  const handleShootCompleted = async () => {
+    // When photographer clicks "Shoot Completed", show upload section
+    // Status will be updated to COMPLETED when all files are uploaded
     setShootStatus('uploading');
   };
 
@@ -323,7 +370,7 @@ export default function BookingDetailsPage() {
 
   const handleCancel = async () => {
     try {
-      const response = await fetch(`/api/bookings/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -360,7 +407,7 @@ export default function BookingDetailsPage() {
 
     try {
       // 1. Call API to reject booking
-      const response = await fetch(`/api/bookings/${id}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {
@@ -392,7 +439,7 @@ export default function BookingDetailsPage() {
     }
   };
 
-  if (loading) {
+  if (loading || statusLoading) {
     return (
       <div className="p-4 flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900"></div>

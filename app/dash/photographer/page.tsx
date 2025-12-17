@@ -160,7 +160,7 @@ export default function HomePage() {
     if (!bookingToReject) return;
 
     try {
-      const response = await fetch(`/api/bookings/${bookingToReject}`, {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingToReject}`, {
         method: 'DELETE',
         credentials: 'include',
         headers: {

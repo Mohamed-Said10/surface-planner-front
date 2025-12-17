@@ -48,13 +48,12 @@ export default function Sidebar() {
   // Get user role safely, with fallback
   const userRole = (session?.user?.role as UserRole) || null;
 
-  // Return early if no valid role
-  if (!userRole || !ROLE_PATHS[userRole]) {
-    return null;
-  }
-
-  // const userRole = 'PHOTOGRAPHER' as UserRole;
-  const { base, bookings, projects, photographers, support  } = getRolePaths(userRole);
+  // Get role paths conditionally (but always call this - it won't error if userRole is null)
+  const rolePaths = userRole && ROLE_PATHS[userRole] ? getRolePaths(userRole) : null;
+  const base = rolePaths?.base || '/dash';
+  const bookings = rolePaths?.bookings || '/dash';
+  const projects = rolePaths?.projects;
+  const photographers = (rolePaths as any)?.photographers;
   const activePath = userRole === 'ADMIN' ? photographers : projects;
 
   // Helper functions
@@ -83,8 +82,9 @@ export default function Sidebar() {
     router.push(path);
   };
 
+  // useEffect must be called before any conditional returns
   useEffect(() => {
-    if (status !== 'authenticated') return;
+    if (status !== 'authenticated' || !userRole || !ROLE_PATHS[userRole]) return;
 
     // If path is a common route, allow access
     if (COMMON_ROUTES.some(route => pathname.startsWith(route))) {
@@ -117,7 +117,10 @@ export default function Sidebar() {
     }
   }, [pathname, status, userRole, router, base]);
 
-  if (status !== 'authenticated') return null;
+  // Return early if no valid role (after all hooks are called)
+  if (!userRole || !ROLE_PATHS[userRole] || status !== 'authenticated') {
+    return null;
+  }
 
   return (
     <div className="w-64 h-screen fixed left-0 top-0 bg-white border-r">
@@ -175,7 +178,7 @@ export default function Sidebar() {
         >
           {userRole === 'PHOTOGRAPHER' ? (
             <>
-              {isActive(projects) ? (
+              {projects && isActive(projects) ? (
                 <DollarCircleFull size={24} color="#000" className="h-5 w-5 mr-3" />
               ) : (
                 <DollarCircle size={24} color="#000" className="h-5 w-5 mr-3" />
@@ -184,7 +187,7 @@ export default function Sidebar() {
             </>
           ): userRole === 'ADMIN' ? (
             <>
-              {isActive(photographers) ? (
+              {photographers && isActive(photographers) ? (
                 <CameraToolFull  className="h-5 w-5 mr-3" />
               ) : (
                 <CameraTool className="h-5 w-5 mr-3" />
@@ -193,7 +196,7 @@ export default function Sidebar() {
             </>
           ) : (
             <>
-              {isActive(activePath) ? (
+              {activePath && isActive(activePath) ? (
                 <CompletedprojectsFull className="h-5 w-5 mr-3" />
               ) : (
                 <Completedprojects className="h-5 w-5 mr-3" />
