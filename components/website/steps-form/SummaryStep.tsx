@@ -3,6 +3,7 @@ import Spinner from "../../shared/spinner";
 import { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from 'next/navigation';
+import { BookingNotificationService } from '@/helpers/notification.service';
 
 interface SummaryStepProps {
   formData: any;
@@ -71,6 +72,21 @@ export default function SummaryStep({ formData, onPrevious, onNext }: SummarySte
         // Remove pending status as it's already created
         sessionStorage.removeItem('bookingFormData');
         sessionStorage.removeItem('statusPayment');
+      }
+
+      // Send notification to admin about new booking
+      try {
+        const clientName = `${session.user?.name || 'Client'}`;
+        const bookingReference = data.booking.id.slice(0, 8);
+        
+        await BookingNotificationService.notifyAdminOfNewBooking(
+          data.booking.id,
+          clientName,
+          bookingReference
+        );
+      } catch (notificationError) {
+        console.error('Failed to send notification:', notificationError);
+        // Don't block the booking flow if notification fails
       }
 
       // Redirect to payment page

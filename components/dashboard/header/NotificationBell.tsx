@@ -4,17 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-
-export interface Notification {
-  id: string;
-  type: 'BOOKING' | 'MESSAGE' | 'PAYMENT' | 'STATUS_CHANGE';
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  bookingId?: string;
-  senderId?: string;
-}
+import { 
+  Notification, 
+  NotificationType,
+  notificationConfig 
+} from '@/components/types/notification';
 
 export default function NotificationBell() {
   const { data: session } = useSession();
@@ -115,31 +109,25 @@ export default function NotificationBell() {
       await handleMarkAsRead(notification.id);
     }
 
-    // Navigate based on notification type
+    // Navigate based on notification type and role
+    const role = session?.user?.role?.toLowerCase();
+    
     if (notification.bookingId) {
-      const role = session?.user?.role?.toLowerCase();
+      // For booking-related notifications, go to booking details
       router.push(`/dash/${role}/booking-details/${notification.bookingId}`);
     } else if (notification.type === 'MESSAGE') {
-      const role = session?.user?.role?.toLowerCase();
+      // For messages, go to messages page
       router.push(`/dash/${role}/messages`);
+    } else if (notification.actionUrl) {
+      // If there's a custom action URL, use it
+      router.push(notification.actionUrl);
     }
 
     setIsOpen(false);
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'MESSAGE':
-        return '💬';
-      case 'BOOKING':
-        return '📅';
-      case 'PAYMENT':
-        return '💰';
-      case 'STATUS_CHANGE':
-        return '🔄';
-      default:
-        return '🔔';
-    }
+  const getNotificationIcon = (type: NotificationType) => {
+    return notificationConfig[type]?.icon || '🔔';
   };
 
   const getTimeAgo = (dateString: string) => {

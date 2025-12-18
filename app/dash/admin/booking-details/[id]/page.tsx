@@ -18,6 +18,7 @@ import {
 } from "@/helpers/bookingStatusHelper";
 import Link from "next/link";
 import { Photographer } from "../../photographers-portfolio/[id]/page";
+import { BookingNotificationService } from '@/helpers/notification.service';
 
 interface Booking {
   id: string;
@@ -154,6 +155,27 @@ export default function BookingDetailsPage() {
         setBooking(updated);               // instantly refresh UI
         setIsAssignModalOpen(false);
         setSelectedPhotogId(''); // reset selection
+
+        // Send notification to photographer about assignment
+        try {
+          const assignedPhotographer = photographers.find(p => p.id === selectedPhotogId);
+          const clientName = booking?.client 
+            ? `${booking.client.firstname} ${booking.client.lastname}` 
+            : 'Client';
+          const bookingReference = id.toString().slice(0, 8);
+          
+          if (assignedPhotographer) {
+            await BookingNotificationService.notifyPhotographerOfAssignment(
+              selectedPhotogId,
+              id.toString(),
+              clientName,
+              bookingReference
+            );
+          }
+        } catch (notificationError) {
+          console.error('Failed to send notification:', notificationError);
+          // Don't block the assignment flow if notification fails
+        }
       } else {
         console.error('Assignment error:', data);
         alert(data.error || 'Assignment failed');
