@@ -2,12 +2,16 @@
 
 import type React from "react"
 import { Upload, X, Image, Video, FileText } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 
 interface UploadedFile {
-  file: File
+  file: File | null // Null for existing files from backend
   preview?: string
   id: string
+  isExisting?: boolean // Flag to identify files from backend
+  fileName?: string // Store filename for existing files
+  fileSize?: number // Store file size for existing files
+  fileUrl?: string // Store URL for existing files
 }
 
 interface UploadSectionProps {
@@ -17,19 +21,50 @@ interface UploadSectionProps {
   maxSize?: number // in MB
   onFileUpload?: (files: FileList) => void
   onUploadProgress?: (section: string, hasFiles: boolean) => void
+  existingFiles?: any[] // Files already uploaded to backend
 }
 
-function UploadSection({ 
-  title, 
-  acceptedFormats = "Images, Videos, Documents", 
+function UploadSection({
+  title,
+  acceptedFormats = "Images, Videos, Documents",
   acceptedTypes = ["image/*", "video/*", ".pdf", ".doc", ".docx"],
   maxSize = 10,
   onFileUpload,
-  onUploadProgress
+  onUploadProgress,
+  existingFiles = []
 }: UploadSectionProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
   const [error, setError] = useState<string>("")
+
+  // Initialize with existing files from backend
+  useEffect(() => {
+    if (existingFiles && existingFiles.length > 0) {
+      const existingFileItems: UploadedFile[] = existingFiles.map((file) => {
+        // The backend returns fileUrl which is the full URL to the file
+        const imageUrl = file.fileUrl || file.url
+        console.log(`[${title}] Loading existing file:`, file.fileName, 'URL:', imageUrl)
+
+        return {
+          file: null, // We don't have the actual File object, just metadata
+          id: file.id,
+          preview: imageUrl, // Use the full file URL as preview
+          isExisting: true,
+          fileName: file.fileName || imageUrl?.split('/').pop() || 'File',
+          fileSize: file.fileSize || 0,
+          fileUrl: imageUrl
+        }
+      })
+
+      setUploadedFiles(existingFileItems)
+
+      // Only notify parent once on initial load, not on every render
+      if (onUploadProgress) {
+        onUploadProgress(title, true)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [existingFiles, title]) // Remove onUploadProgress from dependencies to prevent infinite loop
 
   const validateFile = (file: File): boolean => {
     // Check file size
@@ -159,9 +194,20 @@ function UploadSection({
     });
   }
 
-  const getFileIcon = (file: File) => {
-    if (file.type.startsWith('image/')) return <Image className="h-4 w-4" />
-    if (file.type.startsWith('video/')) return <Video className="h-4 w-4" />
+  const getFileIcon = (uploadedFile: UploadedFile) => {
+    // For existing files, check the URL or filename extension
+    if (uploadedFile.isExisting) {
+      const fileName = uploadedFile.fileName?.toLowerCase() || ''
+      if (fileName.match(/\.(jpg|jpeg|png|gif|webp|heic)$/)) return <Image className="h-4 w-4" />
+      if (fileName.match(/\.(mp4|mov|avi|mkv)$/)) return <Video className="h-4 w-4" />
+      return <FileText className="h-4 w-4" />
+    }
+
+    // For new files, check the File object type
+    if (uploadedFile.file) {
+      if (uploadedFile.file.type.startsWith('image/')) return <Image className="h-4 w-4" />
+      if (uploadedFile.file.type.startsWith('video/')) return <Video className="h-4 w-4" />
+    }
     return <FileText className="h-4 w-4" />
   }
 
@@ -219,10 +265,20 @@ function UploadSection({
                     <div key={uploadedFile.id} className="relative group">
                       {uploadedFile.preview ? (
                         <div className="aspect-square relative">
-                          <img 
-                            src={uploadedFile.preview} 
-                            alt={uploadedFile.file.name}
+                          <img
+                            src={uploadedFile.preview}
+                            alt={uploadedFile.isExisting ? uploadedFile.fileName : uploadedFile.file?.name}
                             className="w-full h-full object-cover rounded-lg border"
+                            onError={(e) => {
+                              console.error(`Failed to load image: ${uploadedFile.preview}`)
+                              // Replace broken image with a placeholder
+                              e.currentTarget.style.display = 'none'
+                              const parent = e.currentTarget.parentElement
+                              if (parent) {
+                                parent.classList.remove('aspect-square')
+                                parent.classList.add('bg-gray-200', 'flex', 'items-center', 'justify-center', 'aspect-square')
+                              }
+                            }}
                           />
                           <button
                             onClick={(e) => {
@@ -237,10 +293,13 @@ function UploadSection({
                           </button>
                           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent text-white text-xs p-2 rounded-b-lg">
                             <div className="truncate font-medium">
-                              {uploadedFile.file.name}
+                              {uploadedFile.isExisting ? uploadedFile.fileName : uploadedFile.file?.name}
                             </div>
                             <div className="text-gray-300">
-                              {formatFileSize(uploadedFile.file.size)}
+                              {uploadedFile.isExisting
+                                ? (uploadedFile.fileSize ? formatFileSize(uploadedFile.fileSize) : 'Unknown size')
+                                : (uploadedFile.file ? formatFileSize(uploadedFile.file.size) : '')
+                              }
                             </div>
                           </div>
                         </div>
@@ -258,13 +317,16 @@ function UploadSection({
                             <X className="h-3 w-3" />
                           </button>
                           <div className="text-gray-600 mb-2">
-                            {getFileIcon(uploadedFile.file)}
+                            {getFileIcon(uploadedFile)}
                           </div>
                           <p className="text-xs text-gray-600 text-center truncate w-full px-1 font-medium">
-                            {uploadedFile.file.name}
+                            {uploadedFile.isExisting ? uploadedFile.fileName : uploadedFile.file?.name}
                           </p>
                           <p className="text-xs text-gray-500 mt-1">
-                            {formatFileSize(uploadedFile.file.size)}
+                            {uploadedFile.isExisting
+                              ? (uploadedFile.fileSize ? formatFileSize(uploadedFile.fileSize) : 'Unknown size')
+                              : (uploadedFile.file ? formatFileSize(uploadedFile.file.size) : '')
+                            }
                           </p>
                         </div>
                       )}
@@ -316,45 +378,97 @@ interface UploadWorkProps {
 }
 
 export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }: UploadWorkProps) {
-  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string>("")
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  const [isLoadingFiles, setIsLoadingFiles] = useState(false)
+  const [existingFiles, setExistingFiles] = useState<Record<string, any[]>>({})
+  // Use ref instead of state to store File objects (File objects can't be serialized in state)
+  const allFilesRef = useRef<Record<string, File[]>>({})
 
-  const handleSectionUpload = (section: string) => async (files: FileList) => {
-    console.log(`Files uploaded to ${section}:`, files)
-
-    if (bookingId) {
-      // Upload files to backend
-      setUploading(prev => ({ ...prev, [section]: true }))
+  // Fetch existing uploaded files from backend
+  useEffect(() => {
+    const fetchExistingFiles = async () => {
+      if (!bookingId) return
 
       try {
-        const formData = new FormData()
-        formData.append('bookingId', bookingId)
-        formData.append('fileType', section)
-
-        Array.from(files).forEach((file) => {
-          formData.append('files', file)
-        })
-
+        setIsLoadingFiles(true)
         const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/files`, {
-          method: 'POST',
           credentials: 'include',
-          body: formData,
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          console.log(`Successfully uploaded files to ${section}:`, data)
-        } else {
-          console.error(`Failed to upload files to ${section}`)
+        if (!response.ok) {
+          console.error('Failed to fetch existing files')
+          return
         }
+
+        const data = await response.json()
+        console.log('Fetched existing files from backend:', data)
+        console.log('Type of data:', typeof data)
+        console.log('Is array?', Array.isArray(data))
+
+        // Handle different response formats
+        let files: any[] = []
+
+        if (Array.isArray(data)) {
+          // Backend returned array directly
+          files = data
+        } else if (data && typeof data === 'object') {
+          // Backend might return { files: [...] } or similar
+          if (Array.isArray(data.files)) {
+            files = data.files
+          } else if (Array.isArray(data.data)) {
+            files = data.data
+          } else {
+            console.error('Unexpected data structure:', data)
+            return
+          }
+        }
+
+        console.log('Extracted files array:', files)
+
+        // Group files by type
+        const filesByType: Record<string, any[]> = {}
+        files.forEach((file: any) => {
+          if (!filesByType[file.fileType]) {
+            filesByType[file.fileType] = []
+          }
+          filesByType[file.fileType].push(file)
+        })
+
+        setExistingFiles(filesByType)
+        console.log('Grouped files by type:', filesByType)
+        console.log('Available file type keys:', Object.keys(filesByType))
       } catch (error) {
-        console.error(`Error uploading files to ${section}:`, error)
+        console.error('Error fetching existing files:', error)
       } finally {
-        setUploading(prev => ({ ...prev, [section]: false }))
+        setIsLoadingFiles(false)
       }
     }
+
+    fetchExistingFiles()
+  }, [bookingId])
+
+  const handleSectionUpload = (section: string) => async (files: FileList) => {
+    console.log(`Files added to ${section}:`, files)
+    console.log(`Current ref before update:`, allFilesRef.current)
+    console.log(`Ref is object?`, typeof allFilesRef.current === 'object')
+    console.log(`Ref has array values?`, Object.values(allFilesRef.current).every(v => Array.isArray(v)))
+
+    // Store files locally without uploading (using ref to preserve File objects)
+    const filesArray = Array.from(files)
+
+    // Defensive check: ensure allFilesRef.current is a proper files object
+    if (!allFilesRef.current || typeof allFilesRef.current !== 'object' || 'id' in allFilesRef.current) {
+      console.warn('allFilesRef was corrupted, resetting to empty object')
+      allFilesRef.current = {}
+    }
+
+    allFilesRef.current = {
+      ...allFilesRef.current,
+      [section]: [...(allFilesRef.current[section] || []), ...filesArray]
+    }
+    console.log(`Updated allFiles ref:`, allFilesRef.current)
 
     if (onFileUpload) {
       onFileUpload(section, files)
@@ -367,12 +481,76 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
       return;
     }
 
+    console.log('Current allFiles ref at submit:', allFilesRef.current)
+    console.log('Number of sections with files:', Object.keys(allFilesRef.current).length)
+
+    // Check if at least one section has files
+    const hasFiles = Object.values(allFilesRef.current).some((files: File[]) => files.length > 0);
+    if (!hasFiles) {
+      setSubmitError("Please upload at least one file before submitting");
+      return;
+    }
+
     setIsSubmitting(true);
     setSubmitError("");
     setSubmitSuccess(false);
 
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/status`, {
+      // Upload files for each section
+      for (const [section, files] of Object.entries(allFilesRef.current)) {
+        console.log(`Processing section: ${section} with ${files.length} files`)
+
+        // Check if files are valid File objects
+        files.forEach((file: File, index: number) => {
+          console.log(`  File ${index}:`, {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            isFile: file instanceof File
+          })
+        })
+
+        if (files.length > 0) {
+          // Filter out invalid files
+          const validFiles = files.filter((file: File) => file instanceof File && file.size > 0)
+          console.log(`  Valid files for ${section}: ${validFiles.length}/${files.length}`)
+
+          if (validFiles.length === 0) {
+            console.log(`  Skipping ${section} - no valid files`)
+            continue
+          }
+
+          const formData = new FormData();
+          formData.append('bookingId', bookingId);
+          formData.append('fileType', section);
+
+          validFiles.forEach((file: File) => {
+            formData.append('files', file);
+          });
+
+          console.log(`  Uploading ${validFiles.length} files for ${section}...`)
+          const uploadResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/files`, {
+            method: 'POST',
+            credentials: 'include',
+            body: formData,
+          });
+
+          console.log(`  Upload response status for ${section}:`, uploadResponse.status)
+
+          if (!uploadResponse.ok) {
+            const errorData = await uploadResponse.json();
+            console.error(`  Upload failed for ${section}:`, errorData)
+            throw new Error(`Failed to upload ${section}: ${errorData.message || 'Unknown error'}`);
+          }
+
+          console.log(`  ✓ Successfully uploaded files for ${section}`);
+        }
+      }
+
+      console.log('All sections processed successfully')
+
+      // After all files are uploaded, update status to COMPLETED
+      const statusResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/status`, {
         method: 'PUT',
         credentials: 'include',
         headers: {
@@ -383,9 +561,9 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.details || 'Failed to submit work');
+      if (!statusResponse.ok) {
+        const errorData = await statusResponse.json();
+        throw new Error(errorData.details || 'Failed to update status');
       }
 
       setSubmitSuccess(true);
@@ -402,9 +580,12 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
     }
   };
 
+  console.log('UploadWork component rendered, current allFiles:', allFilesRef.current)
+
   const uploadSections = [
     {
       title: "Unedited Photos",
+      sectionKey: "unedited-photos",
       acceptedFormats: "JPG, PNG, HEIC, WEBP files",
       acceptedTypes: ["image/jpeg", "image/jpg", "image/png", "image/heic", "image/webp", ".jpg", ".jpeg", ".png", ".heic", ".webp"],
       maxSize: 50,
@@ -412,6 +593,7 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
     },
     {
       title: "Edited Photos",
+      sectionKey: "edited-photos",
       acceptedFormats: "JPG, PNG, TIFF, WEBP files",
       acceptedTypes: ["image/jpeg", "image/jpg", "image/png", "image/tiff", "image/webp", ".jpg", ".jpeg", ".png", ".tiff", ".tif", ".webp"],
       maxSize: 50,
@@ -419,6 +601,7 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
     },
     {
       title: "Videos",
+      sectionKey: "videos",
       acceptedFormats: "MP4, MOV, AVI, MKV files",
       acceptedTypes: ["video/mp4", "video/quicktime", "video/avi", "video/x-msvideo", ".mkv"],
       maxSize: 500,
@@ -426,6 +609,7 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
     },
     {
       title: "360° Virtual Tour",
+      sectionKey: "virtual-tour",
       acceptedFormats: "360° images, VR files",
       acceptedTypes: ["image/*", "video/*", ".vrm", ".obj"],
       maxSize: 100,
@@ -433,6 +617,7 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
     },
     {
       title: "Floor Plan & Room Staging",
+      sectionKey: "floor-plan",
       acceptedFormats: "PDF, DWG, JPG, PNG files",
       acceptedTypes: ["application/pdf", ".dwg", "image/jpeg", "image/png"],
       maxSize: 25,
@@ -447,17 +632,24 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
         <div className="dvideligne border-b mb-3 mt-3"/>
 
       <div className="space-y-0">
-        {uploadSections.map((section, index) => (
-          <UploadSection
-            key={index}
-            title={section.title}
-            acceptedFormats={section.acceptedFormats}
-            acceptedTypes={section.acceptedTypes}
-            maxSize={section.maxSize}
-            onFileUpload={section.onUpload}
-            onUploadProgress={onUploadProgress}
-          />
-        ))}
+        {isLoadingFiles ? (
+          <div className="p-8 text-center text-gray-500">
+            Loading existing files...
+          </div>
+        ) : (
+          uploadSections.map((section) => (
+            <UploadSection
+              key={section.sectionKey}
+              title={section.title}
+              acceptedFormats={section.acceptedFormats}
+              acceptedTypes={section.acceptedTypes}
+              maxSize={section.maxSize}
+              onFileUpload={section.onUpload}
+              onUploadProgress={onUploadProgress}
+              existingFiles={existingFiles[section.sectionKey] || []}
+            />
+          ))
+        )}
       </div>
 
       {/* Submit Button */}
