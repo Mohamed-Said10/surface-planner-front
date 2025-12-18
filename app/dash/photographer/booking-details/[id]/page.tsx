@@ -33,6 +33,7 @@ interface Booking {
     phoneNumber: string;
   } | null;
   client: {
+    id: string;
     firstname: string;
     lastname: string;
     email: string;
@@ -808,7 +809,12 @@ export default function BookingDetailsPage() {
               </div>
             </div>
           ) : (
-            <UploadWork bookingId={id as string} onUploadProgress={handleUploadProgress} />
+            <UploadWork 
+              bookingId={id as string} 
+              clientId={booking?.client?.id}
+              photographerName={booking?.photographer ? `${booking.photographer.firstname} ${booking.photographer.lastname}` : undefined}
+              onUploadProgress={handleUploadProgress} 
+            />
           )}
         </>
       )}

@@ -4,17 +4,11 @@ import { useState, useEffect, useRef } from 'react';
 import { Bell } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-
-export interface Notification {
-  id: string;
-  type: 'BOOKING' | 'MESSAGE' | 'PAYMENT' | 'STATUS_CHANGE';
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-  bookingId?: string;
-  senderId?: string;
-}
+import { 
+  Notification, 
+  NotificationType,
+  notificationConfig 
+} from '@/components/types/notification';
 
 export default function NotificationBell() {
   const { data: session } = useSession();
@@ -23,6 +17,7 @@ export default function NotificationBell() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [showClearModal, setShowClearModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Fetch notifications
@@ -31,17 +26,29 @@ export default function NotificationBell() {
 
     try {
       setLoading(true);
+      console.log('🔄 Fetching notifications...');
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.unreadCount || 0);
+      if (!response.ok) {
+        console.error('❌ Failed to fetch notifications:', response.status);
+        return;
       }
+
+      const data = await response.json();
+      console.log('✅ Notifications fetched:', {
+        total: data.notifications?.length || 0,
+        unreadCount: data.unreadCount || 0,
+        notifications: data.notifications
+      });
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.unreadCount || 0);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
+      console.error('❌ Error fetching notifications:', error);
     } finally {
       setLoading(false);
     }
@@ -73,39 +80,55 @@ export default function NotificationBell() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notificationId}/read`, {
+      console.log('📝 Marking notification as read:', notificationId);
+      
+      const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
 
+      console.log('📝 Mark as read response status:', response.status);
+      
       if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notif =>
-            notif.id === notificationId ? { ...notif, isRead: true } : notif
-          )
-        );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        const result = await response.json();
+        console.log('✅ Mark as read success:', result);
+        // Fetch fresh data from backend to ensure sync
+        await fetchNotifications();
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Failed to mark notification as read:', response.status, errorText);
       }
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      console.error('❌ Error marking notification as read:', error);
     }
   };
 
-  const handleMarkAllAsRead = async () => {
+  const handleClearAll = async () => {
     try {
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/mark-all-read`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
+      console.log('🗑️ Clearing all notifications...');
+      
+      // Delete all notifications one by one
+      const deletePromises = notifications.map(notification =>
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notification.id}`, {
+          method: 'DELETE',
+          credentials: 'include',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+      );
 
-      if (response.ok) {
-        setNotifications(prev =>
-          prev.map(notif => ({ ...notif, isRead: true }))
-        );
-        setUnreadCount(0);
-      }
+      await Promise.all(deletePromises);
+      console.log('✅ All notifications cleared');
+      
+      // Refresh notifications
+      await fetchNotifications();
+      setShowClearModal(false);
     } catch (error) {
-      console.error('Error marking all as read:', error);
+      console.error('❌ Error clearing notifications:', error);
     }
   };
 
@@ -115,31 +138,25 @@ export default function NotificationBell() {
       await handleMarkAsRead(notification.id);
     }
 
-    // Navigate based on notification type
+    // Navigate based on notification type and role
+    const role = session?.user?.role?.toLowerCase();
+    
     if (notification.bookingId) {
-      const role = session?.user?.role?.toLowerCase();
+      // For booking-related notifications, go to booking details
       router.push(`/dash/${role}/booking-details/${notification.bookingId}`);
     } else if (notification.type === 'MESSAGE') {
-      const role = session?.user?.role?.toLowerCase();
+      // For messages, go to messages page
       router.push(`/dash/${role}/messages`);
+    } else if (notification.actionUrl) {
+      // If there's a custom action URL, use it
+      router.push(notification.actionUrl);
     }
 
     setIsOpen(false);
   };
 
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'MESSAGE':
-        return '💬';
-      case 'BOOKING':
-        return '📅';
-      case 'PAYMENT':
-        return '💰';
-      case 'STATUS_CHANGE':
-        return '🔄';
-      default:
-        return '🔔';
-    }
+  const getNotificationIcon = (type: NotificationType) => {
+    return notificationConfig[type]?.icon || '🔔';
   };
 
   const getTimeAgo = (dateString: string) => {
@@ -174,12 +191,12 @@ export default function NotificationBell() {
           {/* Header */}
           <div className="p-4 border-b border-gray-200 flex items-center justify-between">
             <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
-            {unreadCount > 0 && (
+            {notifications.length > 0 && (
               <button
-                onClick={handleMarkAllAsRead}
-                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                onClick={() => setShowClearModal(true)}
+                className="text-sm text-red-600 hover:text-red-700 font-medium"
               >
-                Mark all as read
+                Clear All ({notifications.length})
               </button>
             )}
           </div>
@@ -233,22 +250,32 @@ export default function NotificationBell() {
               </div>
             )}
           </div>
+        </div>
+      )}
 
-          {/* Footer */}
-          {notifications.length > 0 && (
-            <div className="p-3 border-t border-gray-200">
+      {/* Clear All Confirmation Modal */}
+      {showClearModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Clear All Notifications?</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Are you sure you want to delete all {notifications.length} notification{notifications.length !== 1 ? 's' : ''}? This action cannot be undone.
+            </p>
+            <div className="flex gap-3 justify-end">
               <button
-                onClick={() => {
-                  const role = session?.user?.role?.toLowerCase();
-                  router.push(`/dash/${role}/notifications`);
-                  setIsOpen(false);
-                }}
-                className="w-full text-sm text-center text-blue-600 hover:text-blue-700 font-medium py-1"
+                onClick={() => setShowClearModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
               >
-                View all notifications
+                Cancel
+              </button>
+              <button
+                onClick={handleClearAll}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors"
+              >
+                Clear All
               </button>
             </div>
-          )}
+          </div>
         </div>
       )}
     </div>

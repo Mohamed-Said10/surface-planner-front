@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { Upload, X, Image, Video, FileText } from "lucide-react"
+import { BookingNotificationService } from '@/helpers/notification.service'
 import { useState, useRef, useEffect } from "react"
 
 interface UploadedFile {
@@ -373,11 +374,14 @@ function UploadSection({
 
 interface UploadWorkProps {
   bookingId?: string
+  clientId?: string
+  photographerName?: string
   onFileUpload?: (section: string, files: FileList) => void
   onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
-
-export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }: UploadWorkProps) {
+  
+export default function UploadWork({ bookingId, clientId, photographerName, onFileUpload, onUploadProgress }: UploadWorkProps) {
+  const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string>("")
   const [submitSuccess, setSubmitSuccess] = useState(false)
@@ -567,6 +571,22 @@ export default function UploadWork({ bookingId, onFileUpload, onUploadProgress }
       }
 
       setSubmitSuccess(true);
+
+      // Send notification to client about work completion
+      if (clientId && photographerName) {
+        try {
+          const bookingReference = bookingId.slice(0, 8);
+          await BookingNotificationService.notifyClientWorkCompleted(
+            bookingId,
+            clientId,
+            photographerName,
+            bookingReference
+          );
+        } catch (notificationError) {
+          console.error('Failed to send notification:', notificationError);
+          // Don't block the submission if notification fails
+        }
+      }
 
       // Reload page after 2 seconds to show updated status
       setTimeout(() => {
