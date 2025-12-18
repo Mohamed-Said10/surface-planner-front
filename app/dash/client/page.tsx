@@ -1,5 +1,6 @@
 "use client";
 
+import React from "react";
 import { useSession } from "next-auth/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard";
@@ -13,6 +14,8 @@ import {
   type BookingStatus,
 } from "@/helpers/bookingStatusHelper";
 import Link from "next/link";
+import MediaGallery from "@/components/client/MediaGallery";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 export default function HomePage() {
   const { data: session, status } = useSession();
@@ -23,6 +26,127 @@ export default function HomePage() {
     totalBookings: 0,
     activeBookings: 0,
   });
+  const [bookingFiles, setBookingFiles] = useState<Record<string, any[]>>({});
+  const [filesLoading, setFilesLoading] = useState<Record<string, boolean>>({});
+  const [expandedGalleries, setExpandedGalleries] = useState<Record<string, boolean>>({});
+
+  // Mock data for demonstration - showing completed booking with uploaded files
+  const mockCompletedBookingFiles = {
+    'mock-completed-booking': [
+      {
+        id: '1',
+        url: '/images/portfolio_1.png',
+        type: 'image' as const,
+        name: 'Living_Room_01.jpg',
+        category: 'edited-photos'
+      },
+      {
+        id: '2',
+        url: '/images/portfolio_2.png',
+        type: 'image' as const,
+        name: 'Kitchen_View.jpg',
+        category: 'edited-photos'
+      },
+      {
+        id: '3',
+        url: '/images/portfolio_3.png',
+        type: 'image' as const,
+        name: 'Bedroom_01.jpg',
+        category: 'edited-photos'
+      },
+      {
+        id: '4',
+        url: '/images/portfolio_4.png',
+        type: 'image' as const,
+        name: 'Bathroom_Modern.jpg',
+        category: 'edited-photos'
+      },
+      {
+        id: '5',
+        url: '/images/portfolio_5.png',
+        type: 'image' as const,
+        name: 'Exterior_View.jpg',
+        category: 'edited-photos'
+      },
+      {
+        id: '6',
+        url: '/images/ai-staging-before.jpeg',
+        type: 'image' as const,
+        name: 'Raw_Shot_01.jpg',
+        category: 'unedited-photos'
+      },
+      {
+        id: '7',
+        url: '/images/ai-staging-after.jpeg',
+        type: 'image' as const,
+        name: 'Raw_Shot_02.jpg',
+        category: 'unedited-photos'
+      },
+      {
+        id: '8',
+        url: '/images/portfolio_1.png',
+        type: 'image' as const,
+        name: 'Raw_Shot_03.jpg',
+        category: 'unedited-photos'
+      },
+      {
+        id: '9',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+        type: 'video' as const,
+        name: 'Property_Walkthrough.mp4',
+        category: 'videos'
+      },
+      {
+        id: '10',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+        type: 'video' as const,
+        name: 'Exterior_Tour.mp4',
+        category: 'videos'
+      },
+      {
+        id: '11',
+        url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+        type: 'video' as const,
+        name: 'Drone_Footage.mp4',
+        category: 'videos'
+      },
+      {
+        id: '12',
+        url: '/images/portfolio_2.png',
+        type: 'image' as const,
+        name: 'Virtual_Tour_360_01.jpg',
+        category: 'virtual-tour'
+      },
+      {
+        id: '13',
+        url: '/images/portfolio_3.png',
+        type: 'image' as const,
+        name: 'Virtual_Tour_360_02.jpg',
+        category: 'virtual-tour'
+      },
+      {
+        id: '14',
+        url: '/images/portfolio_4.png',
+        type: 'image' as const,
+        name: 'Virtual_Tour_360_03.jpg',
+        category: 'virtual-tour'
+      },
+      {
+        id: '15',
+        url: '/images/2d-3d-plans-before.jpeg',
+        type: 'image' as const,
+        name: 'Floor_Plan_Level_1.jpg',
+        category: 'floor-plan'
+      },
+      {
+        id: '16',
+        url: '/images/2d-3d-plans-after.jpeg',
+        type: 'image' as const,
+        name: 'Floor_Plan_3D.jpg',
+        category: 'floor-plan'
+      }
+    ]
+  };
 
   // États pour le booking status
   const [bookingStatus, setBookingStatus] = useState<BookingStatus | null>(
@@ -64,6 +188,47 @@ export default function HomePage() {
       requestInProgress.current = false;
     }
   }, [session]);
+
+  const fetchBookingFiles = useCallback(async (bookingId: string) => {
+    try {
+      setFilesLoading(prev => ({ ...prev, [bookingId]: true }));
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/files`,
+        {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No files yet, that's ok
+          setBookingFiles(prev => ({ ...prev, [bookingId]: [] }));
+          return;
+        }
+        throw new Error("Failed to fetch booking files");
+      }
+
+      const data = await response.json();
+      
+      // Transform the files into the format expected by MediaGallery
+      const transformedFiles = data.files?.map((file: any) => ({
+        id: file.id,
+        url: file.url,
+        type: file.mimeType?.startsWith('video/') ? 'video' : 'image',
+        name: file.originalName || file.filename,
+        category: file.fileType
+      })) || [];
+
+      setBookingFiles(prev => ({ ...prev, [bookingId]: transformedFiles }));
+    } catch (err) {
+      console.error(`Error fetching files for booking ${bookingId}:`, err);
+      setBookingFiles(prev => ({ ...prev, [bookingId]: [] }));
+    } finally {
+      setFilesLoading(prev => ({ ...prev, [bookingId]: false }));
+    }
+  }, []);
 
   const fetchStatusHistory = useCallback(async () => {
     abortControllerRef.current = new AbortController();
@@ -141,6 +306,24 @@ export default function HomePage() {
             (b: any) => !["COMPLETED", "CANCELLED"].includes(b.status)
           ).length,
         });
+
+        // Add mock data for the first booking if it exists (for demonstration)
+        if (data.bookings.length > 0) {
+          const firstBookingId = data.bookings[0].id;
+          setBookingFiles(prev => ({ 
+            ...prev, 
+            [firstBookingId]: mockCompletedBookingFiles['mock-completed-booking']
+          }));
+        }
+
+        // Fetch files for completed bookings
+        const completedBookings = data.bookings.filter(
+          (b: any) => b.status === "COMPLETED" || b.status === "EDITING"
+        );
+        
+        for (const booking of completedBookings) {
+          await fetchBookingFiles(booking.id);
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Failed to load bookings"
@@ -151,7 +334,7 @@ export default function HomePage() {
     };
 
     loadBookings();
-  }, [status, session, fetchBookings]);
+  }, [status, session, fetchBookings, fetchBookingFiles]);
 
   // Effect pour le status history
   useEffect(() => {
@@ -235,56 +418,97 @@ export default function HomePage() {
   </thead>
   <tbody className="divide-y divide-gray-200">
     {bookings.map((booking) => (
-      <tr key={booking.id} className="border-t border-[#E0E0E0]">
-        <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
-          <Link href={`/dash/client/booking-details/${booking.id}`}
-              className="text-sm underline text-[#0D4835]"
-            >
-              {booking.buildingName}, {booking.street}
-            </Link>
-          <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
-        </td>
-        <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
-          <div className="flex items-center text-sm text-[#515662]">
-            <span className="truncate">{booking.package.name}</span>
-           {booking.addOns.length > 0 && (
-  <span className="flex items-center gap-1 ml-1 shrink-0">
-    <span className="relative text-xl mb-1 font-extralight">+</span>
-    {(() => {
-      const names = booking.addOns.map((addon: any) => addon.name);
-      const showPhoto = names.some((name:string) => name.includes('Photo'));
-      const showVideo = names.some((name:string) => name.includes('Video'));
-      const showVirtual = names.some((name:string) => name.includes('Virtual'));
+      <React.Fragment key={booking.id}>
+        <tr className="border-t border-[#E0E0E0]">
+          <td className="w-[38%] px-6 py-4 border-r border-[#E0E0E0]">
+            <Link href={`/dash/client/booking-details/${booking.id}`}
+                className="text-sm underline text-[#0D4835]"
+              >
+                {booking.buildingName}, {booking.street}
+              </Link>
+            <div className="text-xs text-gray-500">{formatDate(booking.appointmentDate)}</div>
+          </td>
+          <td className="w-[18%] px-6 py-4 border-r border-[#E0E0E0] align-middle">
+            <div className="flex items-center text-sm text-[#515662]">
+              <span className="truncate">{booking.package.name}</span>
+             {booking.addOns.length > 0 && (
+    <span className="flex items-center gap-1 ml-1 shrink-0">
+      <span className="relative text-xl mb-1 font-extralight">+</span>
+      {(() => {
+        const names = booking.addOns.map((addon: any) => addon.name);
+        const showPhoto = names.some((name:string) => name.includes('Photo'));
+        const showVideo = names.some((name:string) => name.includes('Video'));
+        const showVirtual = names.some((name:string) => name.includes('Virtual'));
 
-      return (
-        <>
-          {showPhoto && <Photo />}
-          {showVideo && <Video />}
-          {showVirtual && <Virtual />}
-        </>
-      );
-    })()}
-  </span>
-)}
+        return (
+          <>
+            {showPhoto && <Photo />}
+            {showVideo && <Video />}
+            {showVirtual && <Virtual />}
+          </>
+        );
+      })()}
+    </span>
+  )}
 
-          </div>
-        </td>
-        <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
-          <div className="text-sm text-[#515662]">
-            AED {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
-          </div>
-        </td>
-        <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
-          <div className="text-sm text-[#515662] truncate">{booking.photographer?.firstname || "Not assigned"}</div>
-        </td>
-        <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
-          <div className="flex justify-center">
-            <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
-              {formatStatus(booking.status)}
-            </span>
-          </div>
-        </td>
-      </tr>
+            </div>
+          </td>
+          <td className="w-[15%] px-6 py-4 border-r border-[#E0E0E0]">
+            <div className="text-sm text-[#515662]">
+              AED {booking.package.price + booking.addOns.reduce((sum: any, addon: any) => sum + addon.price, 0)}
+            </div>
+          </td>
+          <td className="w-[17%] px-6 py-4 border-r border-[#E0E0E0]">
+            <div className="text-sm text-[#515662] truncate">{booking.photographer?.firstname || "Not assigned"}</div>
+          </td>
+          <td className="w-[12%] px-3 py-4 border-r border-[#E0E0E0]">
+            <div className="flex justify-center">
+              <span className={`px-2 py-1 text-xs rounded-full ${getStatusColor(booking.status)}`}>
+                {formatStatus(booking.status)}
+              </span>
+            </div>
+          </td>
+        </tr>
+        
+        {/* Media Gallery Row - Show when files are available (showing for all bookings for demo) */}
+        {bookingFiles[booking.id] && bookingFiles[booking.id].length > 0 && (
+          <>
+            <tr className="bg-white border-t border-[#E0E0E0]">
+              <td colSpan={5} className="px-6 py-3">
+                <button
+                  onClick={() => setExpandedGalleries(prev => ({ 
+                    ...prev, 
+                    [booking.id]: !prev[booking.id] 
+                  }))}
+                  className="flex items-center justify-between w-full text-left hover:bg-gray-50 -mx-2 px-2 py-2 rounded-lg transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-semibold text-[#0D4835]">
+                      📸 Uploaded Photos & Videos
+                    </span>
+                    <span className="text-xs text-[#515662] bg-[#F5F6F6] px-2 py-1 rounded-full border border-[#E0E0E0]">
+                      {bookingFiles[booking.id].length} files
+                    </span>
+                  </div>
+                  {expandedGalleries[booking.id] ? (
+                    <ChevronUp className="w-5 h-5 text-[#0D4835]" />
+                  ) : (
+                    <ChevronDown className="w-5 h-5 text-[#0D4835]" />
+                  )}
+                </button>
+              </td>
+            </tr>
+            
+            {expandedGalleries[booking.id] && (
+              <tr className="bg-gray-50">
+                <td colSpan={5} className="px-6 pb-4">
+                  <MediaGallery files={bookingFiles[booking.id]} bookingId={booking.id} />
+                </td>
+              </tr>
+            )}
+          </>
+        )}
+      </React.Fragment>
     ))}
   </tbody>
 </table>

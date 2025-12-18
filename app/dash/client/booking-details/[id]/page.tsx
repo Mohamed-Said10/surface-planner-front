@@ -12,6 +12,7 @@ import {
   type BookingStatus,
 } from "@/helpers/bookingStatusHelper"
 import BookingStatusCard from "@/components/dashboard/stats/BookingStatusCard"
+import MediaGallery from "@/components/client/MediaGallery"
 
 interface Booking extends BookingType {
   package: {
@@ -92,6 +93,139 @@ export default function BookingDetailsPage() {
 
   const requestInProgress = useRef(false)
 
+  // States for uploaded files
+  const [bookingFiles, setBookingFiles] = useState<any[]>([])
+  const [filesLoading, setFilesLoading] = useState(false)
+
+  // Fetch booking files
+  const fetchBookingFiles = useCallback(async () => {
+    if (!id) return
+
+    try {
+      setFilesLoading(true)
+      
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${id}/files`,
+        {
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+        }
+      )
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          // No files yet, use mock data for demo
+          setBookingFiles([
+            {
+              id: '1',
+              url: '/images/portfolio_1.png',
+              type: 'image' as const,
+              name: 'Living_Room_01.jpg',
+              category: 'edited-photos'
+            },
+            {
+              id: '2',
+              url: '/images/portfolio_2.png',
+              type: 'image' as const,
+              name: 'Kitchen_View.jpg',
+              category: 'edited-photos'
+            },
+            {
+              id: '3',
+              url: '/images/portfolio_3.png',
+              type: 'image' as const,
+              name: 'Bedroom_01.jpg',
+              category: 'edited-photos'
+            },
+            {
+              id: '4',
+              url: '/images/portfolio_4.png',
+              type: 'image' as const,
+              name: 'Bathroom_Modern.jpg',
+              category: 'edited-photos'
+            },
+            {
+              id: '5',
+              url: '/images/portfolio_5.png',
+              type: 'image' as const,
+              name: 'Exterior_View.jpg',
+              category: 'edited-photos'
+            },
+            {
+              id: '6',
+              url: '/images/ai-staging-before.jpeg',
+              type: 'image' as const,
+              name: 'Raw_Shot_01.jpg',
+              category: 'unedited-photos'
+            },
+            {
+              id: '7',
+              url: '/images/ai-staging-after.jpeg',
+              type: 'image' as const,
+              name: 'Raw_Shot_02.jpg',
+              category: 'unedited-photos'
+            },
+            {
+              id: '8',
+              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4',
+              type: 'video' as const,
+              name: 'Property_Walkthrough.mp4',
+              category: 'videos'
+            },
+            {
+              id: '9',
+              url: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4',
+              type: 'video' as const,
+              name: 'Exterior_Tour.mp4',
+              category: 'videos'
+            },
+            {
+              id: '10',
+              url: '/images/portfolio_2.png',
+              type: 'image' as const,
+              name: 'Virtual_Tour_360_01.jpg',
+              category: 'virtual-tour'
+            },
+            {
+              id: '11',
+              url: '/images/2d-3d-plans-before.jpeg',
+              type: 'image' as const,
+              name: 'Floor_Plan_Level_1.jpg',
+              category: 'floor-plan'
+            },
+            {
+              id: '12',
+              url: '/images/2d-3d-plans-after.jpeg',
+              type: 'image' as const,
+              name: 'Floor_Plan_3D.jpg',
+              category: 'floor-plan'
+            }
+          ])
+          return
+        }
+        throw new Error("Failed to fetch booking files")
+      }
+
+      const data = await response.json()
+      
+      // Transform the files into the format expected by MediaGallery
+      const transformedFiles = data.files?.map((file: any) => ({
+        id: file.id,
+        url: file.url,
+        type: file.mimeType?.startsWith('video/') ? 'video' : 'image',
+        name: file.originalName || file.filename,
+        category: file.fileType
+      })) || []
+
+      setBookingFiles(transformedFiles)
+    } catch (err) {
+      console.error(`Error fetching files for booking ${id}:`, err)
+      setBookingFiles([])
+    } finally {
+      setFilesLoading(false)
+    }
+  }, [id])
+
   const fetchStatusHistory = useCallback(async () => {
     abortControllerRef.current = new AbortController()
     const signal = abortControllerRef.current.signal
@@ -169,8 +303,9 @@ export default function BookingDetailsPage() {
 
     if (session && id) {
       fetchBookingDetails()
+      fetchBookingFiles()
     }
-  }, [session, id])
+  }, [session, id, fetchBookingFiles])
 
   // Effect pour le status history
   useEffect(() => {
@@ -343,6 +478,20 @@ export default function BookingDetailsPage() {
               <p className="text-sm font-medium">Dubai UAE</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Uploaded Photos & Videos Section */}
+      {bookingFiles.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-semibold">📸 Uploaded Photos & Videos</h2>
+            <span className="text-xs text-[#515662] bg-[#F5F6F6] px-3 py-1 rounded-full border border-[#E0E0E0]">
+              {bookingFiles.length} files
+            </span>
+          </div>
+          <hr className="h-1 bg-red mb-4" />
+          <MediaGallery files={bookingFiles} bookingId={id as string} />
         </div>
       )}
 
