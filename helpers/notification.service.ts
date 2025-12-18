@@ -298,4 +298,32 @@ export class BookingNotificationService {
       console.error('Error notifying status change:', error);
     }
   }
+
+  /**
+   * Notify client when photographer completes work and uploads files
+   */
+  static async notifyClientWorkCompleted(
+    bookingId: string,
+    clientId: string,
+    photographerName: string,
+    bookingReference: string
+  ): Promise<void> {
+    try {
+      await fetch(`${API_URL}/api/notifications/work-completed`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          bookingId,
+          clientId,
+          photographerName,
+          bookingReference,
+        }),
+      });
+    } catch (error) {
+      console.error('Error notifying client of work completion:', error);
+    }
+  }
 }

@@ -16,9 +16,9 @@ import {
   formatDate,
   type BookingStatus,
 } from "@/helpers/bookingStatusHelper";
+import { BookingNotificationService } from '@/helpers/notification.service';
 import Link from "next/link";
 import { Photographer } from "../../photographers-portfolio/[id]/page";
-import { BookingNotificationService } from '@/helpers/notification.service';
 
 interface Booking {
   id: string;

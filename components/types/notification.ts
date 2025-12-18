@@ -7,7 +7,8 @@ export type NotificationType =
   | 'STATUS_CHANGE'             // Any status change -> Notify relevant parties
   | 'MESSAGE'                   // New message -> Notify recipient
   | 'PAYMENT'                   // Payment update -> Notify relevant parties
-  | 'BOOKING_CANCELLED';        // Booking cancelled -> Notify all parties
+  | 'BOOKING_CANCELLED'         // Booking cancelled -> Notify all parties
+  | 'WORK_COMPLETED';           // Photographer uploads work -> Notify Client
 
 export type NotificationPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
@@ -92,6 +93,11 @@ export const notificationConfig: Record<NotificationType, {
     color: 'red',
     defaultPriority: 'HIGH',
   },
+  WORK_COMPLETED: {
+    icon: '🎉',
+    color: 'green',
+    defaultPriority: 'HIGH',
+  },
 };
 
 // Helper to generate notification title and message
@@ -146,6 +152,12 @@ export function generateNotificationContent(
       return {
         title: 'Booking Cancelled',
         message: `Booking${metadata?.bookingReference ? ` ${metadata.bookingReference}` : ''} has been cancelled${metadata?.reason ? `: ${metadata.reason}` : ''}.`,
+      };
+    
+    case 'WORK_COMPLETED':
+      return {
+        title: 'Your Photos Are Ready! 🎉',
+        message: `${metadata?.photographerName || 'Your photographer'} has finished editing and uploaded all files for booking${metadata?.bookingReference ? ` ${metadata.bookingReference}` : ''}. Click to view and download your photos!`,
       };
     
     default:
