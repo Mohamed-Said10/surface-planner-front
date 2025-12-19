@@ -597,21 +597,8 @@ export default function UploadWork({ bookingId, clientId, photographerName, book
 
       setSubmitSuccess(true);
 
-      // Send notification to client about work completion
-      if (clientId && photographerName) {
-        try {
-          const bookingReference = bookingId.slice(0, 8);
-          await BookingNotificationService.notifyClientWorkCompleted(
-            bookingId,
-            clientId,
-            photographerName,
-            bookingReference
-          );
-        } catch (notificationError) {
-          console.error('Failed to send notification:', notificationError);
-          // Don't block the submission if notification fails
-        }
-      }
+      // Note: Notification is automatically sent by backend when status changes to COMPLETED
+      // No need to send duplicate notification from frontend
 
       // Reload page after 2 seconds to show updated status
       setTimeout(() => {
