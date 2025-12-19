@@ -22,6 +22,7 @@ import { Photographer } from "../../photographers-portfolio/[id]/page";
 
 interface Booking {
   id: string;
+  shortId: string;
   status: string;
   package: {
     name: string;
@@ -477,6 +478,7 @@ export default function BookingDetailsPage() {
 
       {/* Booking Status */}
       <BookingStatusCard
+        shortId={booking?.shortId || ''}
         bookingStatus={bookingStatus}
         loading={statusLoading}
         error={statusError}

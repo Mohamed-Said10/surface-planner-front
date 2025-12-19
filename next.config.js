@@ -24,7 +24,7 @@ const nextConfig = {
   async headers() {
     const allowedOrigin = process.env.NODE_ENV === 'development'
       ? 'http://localhost:3000'
-      : process.env.NEXT_PUBLIC_FRONTEND_URL;
+      : (process.env.NEXTAUTH_FRONTEND_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '*');
 
     return [
       {

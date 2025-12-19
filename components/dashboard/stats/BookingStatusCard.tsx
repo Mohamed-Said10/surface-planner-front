@@ -111,6 +111,11 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
     );
   }
 
+  // Ensure bookingStatus exists before rendering
+  if (!bookingStatus) {
+    return null;
+  }
+
   return (
     <div>
       <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">

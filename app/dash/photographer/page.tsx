@@ -121,8 +121,8 @@ export default function HomePage() {
   // Handle Accept booking
   const handleAcceptBooking = async (bookingId: string) => {
     console.log('Accept clicked for booking:', bookingId);
-    
-    setHoldingBookings(prev => new Set([...prev, bookingId]));
+
+    setHoldingBookings(prev => new Set(Array.from(prev).concat(bookingId)));
 
     try {
       const apiUrl = `${process.env.NEXT_PUBLIC_API_URL}/api/bookings/${bookingId}/accept`;
@@ -186,6 +186,12 @@ export default function HomePage() {
       updatedElement.style.transform = 'translateY(0)';
       updatedElement.style.opacity = '0.8';
     });
+  };
+
+  // Open reject modal
+  const handleRejectBooking = (bookingId: string) => {
+    setBookingToReject(bookingId);
+    setIsRejectModalOpen(true);
   };
 
   // Confirm rejection and remove booking smoothly
