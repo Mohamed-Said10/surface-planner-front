@@ -23,6 +23,7 @@ interface UploadSectionProps {
   onFileUpload?: (files: FileList) => void
   onUploadProgress?: (section: string, hasFiles: boolean) => void
   existingFiles?: any[] // Files already uploaded to backend
+  isWorkCompleted?: boolean // Disable editing when work is completed
 }
 
 function UploadSection({
@@ -32,7 +33,8 @@ function UploadSection({
   maxSize = 10,
   onFileUpload,
   onUploadProgress,
-  existingFiles = []
+  existingFiles = [],
+  isWorkCompleted = false
 }: UploadSectionProps) {
   const [isDragOver, setIsDragOver] = useState(false)
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFile[]>([])
@@ -182,7 +184,10 @@ function UploadSection({
     }
   }
 
-  const removeFile = (id: string) => {
+  const removeFile = (id: string, isWorkCompleted: boolean) => {
+    // Don't allow file removal if work is completed
+    if (isWorkCompleted) return;
+    
     setUploadedFiles(prev => {
       const filtered = prev.filter(f => f.id !== id);
       
@@ -233,12 +238,14 @@ function UploadSection({
               isDragOver 
                 ? "lue-400 bg-blue-50 scale-105" 
                 : "border-gray-300 bg-gray-50 hover:bg-gray-100 hover:border-gray-400"
-            } ${uploadedFiles.length > 0 ? 'min-h-[200px]' : 'p-8'}`}
-            onDragOver={uploadedFiles.length === 0 ? handleDragOver : undefined}
-            onDragLeave={uploadedFiles.length === 0 ? handleDragLeave : undefined}
-            onDrop={uploadedFiles.length === 0 ? handleDrop : undefined}
+            } ${uploadedFiles.length > 0 ? 'min-h-[200px]' : 'p-8'} ${
+              isWorkCompleted ? 'opacity-60 cursor-not-allowed' : ''
+            }`}
+            onDragOver={uploadedFiles.length === 0 && !isWorkCompleted ? handleDragOver : undefined}
+            onDragLeave={uploadedFiles.length === 0 && !isWorkCompleted ? handleDragLeave : undefined}
+            onDrop={uploadedFiles.length === 0 && !isWorkCompleted ? handleDrop : undefined}
           >
-            {uploadedFiles.length === 0 && (
+            {uploadedFiles.length === 0 && !isWorkCompleted && (
               <input
                 type="file"
                 multiple
@@ -254,10 +261,20 @@ function UploadSection({
                   isDragOver ? "text-blue-500" : "text-[#0F553E]"
                 }`} />
                 <p className="text-sm text-gray-600 mb-1">
-                  <span className="font-medium text-[#0F553E]">Click to upload</span> or drag and drop
+                  {isWorkCompleted ? (
+                    <span className="font-medium text-gray-500">No files uploaded for this section</span>
+                  ) : (
+                    <>
+                      <span className="font-medium text-[#0F553E]">Click to upload</span> or drag and drop
+                    </>
+                  )}
                 </p>
-                <p className="text-xs text-gray-500">{acceptedFormats}</p>
-                <p className="text-xs text-gray-400 mt-1">Max size: {maxSize}MB</p>
+                {!isWorkCompleted && (
+                  <>
+                    <p className="text-xs text-gray-500">{acceptedFormats}</p>
+                    <p className="text-xs text-gray-400 mt-1">Max size: {maxSize}MB</p>
+                  </>
+                )}
               </div>
             ) : (
               <div className="p-4 h-full">
@@ -285,10 +302,11 @@ function UploadSection({
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              removeFile(uploadedFile.id)
+                              removeFile(uploadedFile.id, isWorkCompleted)
                             }}
-                            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-all duration-200 opacity-100 z-30"
-                            title="Remove file"
+                            disabled={isWorkCompleted}
+                            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-all duration-200 opacity-100 z-30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={isWorkCompleted ? "Cannot remove - work already submitted" : "Remove file"}
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -310,10 +328,11 @@ function UploadSection({
                             onClick={(e) => {
                               e.preventDefault()
                               e.stopPropagation()
-                              removeFile(uploadedFile.id)
+                              removeFile(uploadedFile.id, isWorkCompleted)
                             }}
-                            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-all duration-200 opacity-100 z-30"
-                            title="Remove file"
+                            disabled={isWorkCompleted}
+                            className="absolute -top-1 -right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-lg transition-all duration-200 opacity-100 z-30 disabled:opacity-50 disabled:cursor-not-allowed"
+                            title={isWorkCompleted ? "Cannot remove - work already submitted" : "Remove file"}
                           >
                             <X className="h-3 w-3" />
                           </button>
@@ -335,28 +354,30 @@ function UploadSection({
                   ))}
                 </div>
                 
-                <div className="flex items-center justify-center pt-2 border-t border-gray-200">
-                  <input
-                    ref={(input) => {
-                      if (input) {
-                        input.setAttribute('data-add-more', 'true')
-                      }
-                    }}
-                    type="file"
-                    multiple
-                    className="hidden"
-                    onChange={handleFileSelect}
-                    accept={acceptedTypes.join(',')}
-                    id={`add-more-${title.replace(/\s+/g, '-').toLowerCase()}`}
-                  />
-                  <label
-                    htmlFor={`add-more-${title.replace(/\s+/g, '-').toLowerCase()}`}
-                    className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors cursor-pointer shadow-md hover:shadow-lg"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Add More Files
-                  </label>
-                </div>
+                {!isWorkCompleted && (
+                  <div className="flex items-center justify-center pt-2 border-t border-gray-200">
+                    <input
+                      ref={(input) => {
+                        if (input) {
+                          input.setAttribute('data-add-more', 'true')
+                        }
+                      }}
+                      type="file"
+                      multiple
+                      className="hidden"
+                      onChange={handleFileSelect}
+                      accept={acceptedTypes.join(',')}
+                      id={`add-more-${title.replace(/\s+/g, '-').toLowerCase()}`}
+                    />
+                    <label
+                      htmlFor={`add-more-${title.replace(/\s+/g, '-').toLowerCase()}`}
+                      className="flex items-center gap-2 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors cursor-pointer shadow-md hover:shadow-lg"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Add More Files
+                    </label>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -376,15 +397,19 @@ interface UploadWorkProps {
   bookingId?: string
   clientId?: string
   photographerName?: string
+  bookingStatus?: string
   onFileUpload?: (section: string, files: FileList) => void
   onUploadProgress?: (section: string, hasFiles: boolean) => void
 }
   
-export default function UploadWork({ bookingId, clientId, photographerName, onFileUpload, onUploadProgress }: UploadWorkProps) {
+export default function UploadWork({ bookingId, clientId, photographerName, bookingStatus, onFileUpload, onUploadProgress }: UploadWorkProps) {
   const [uploading, setUploading] = useState<Record<string, boolean>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string>("")
   const [submitSuccess, setSubmitSuccess] = useState(false)
+  
+  // Check if work has been completed (submitted)
+  const isWorkCompleted = bookingStatus === 'COMPLETED'
   const [isLoadingFiles, setIsLoadingFiles] = useState(false)
   const [existingFiles, setExistingFiles] = useState<Record<string, any[]>>({})
   // Use ref instead of state to store File objects (File objects can't be serialized in state)
@@ -667,6 +692,7 @@ export default function UploadWork({ bookingId, clientId, photographerName, onFi
               onFileUpload={section.onUpload}
               onUploadProgress={onUploadProgress}
               existingFiles={existingFiles[section.sectionKey] || []}
+              isWorkCompleted={isWorkCompleted}
             />
           ))
         )}
@@ -674,7 +700,7 @@ export default function UploadWork({ bookingId, clientId, photographerName, onFi
 
       {/* Submit Button */}
       <div className="mt-6 pt-6 border-t border-gray-200">
-        {submitSuccess && (
+        {(submitSuccess || isWorkCompleted) && (
           <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
             Work submitted successfully! The booking status has been updated to Completed.
           </div>
@@ -688,10 +714,10 @@ export default function UploadWork({ bookingId, clientId, photographerName, onFi
 
         <button
           onClick={handleSubmitWork}
-          disabled={isSubmitting || submitSuccess}
+          disabled={isSubmitting || submitSuccess || isWorkCompleted}
           className="w-full py-3 px-6 bg-[#0F553E] hover:bg-[#0F553E]/90 text-white font-medium rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {isSubmitting ? 'Submitting...' : submitSuccess ? 'Work Submitted!' : 'Submit Work & Complete Booking'}
+          {isSubmitting ? 'Submitting...' : (submitSuccess || isWorkCompleted) ? 'Booking Completed ✓' : 'Submit Work & Complete Booking'}
         </button>
       </div>
     </div>

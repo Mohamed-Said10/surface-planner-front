@@ -313,25 +313,97 @@ export default function BookingDetailsPage() {
   }> => {
     if (!bookingStatus || !bookingStatus.steps) return [];
 
-    // Enrich API data with local UI state for interactive features
-    const allFilesUploaded = Object.values(uploadProgress).every(hasFiles => hasFiles);
+    // Check if at least one file has been uploaded
+    const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
 
-    return bookingStatus.steps.map((step) => {
-      // Add local UI states for Shoot step
+    // Get the current backend status
+    const currentStatus = booking?.status;
+
+    return bookingStatus.steps.map((step, index) => {
+      // Handle Shoot step
       if (step.label === 'Shoot in Progress' || step.label === 'Shoot') {
+        // During SHOOTING: show as in progress (green with pulse)
+        if (currentStatus === 'SHOOTING' && shootStatus === 'shooting') {
+          return {
+            ...step,
+            completed: false,
+            inProgress: true, // Green pulsing circle
+          };
+        }
+        
+        // After clicking "Finish Shoot" or later: show as completed (green with checkmark)
+        if (currentStatus === 'EDITING' || currentStatus === 'COMPLETED') {
+          return {
+            ...step,
+            completed: true, // Green checkmark
+            inProgress: false,
+          };
+        }
+        
+        // Before starting (PHOTOGRAPHER_ACCEPTED or waiting): gray circle
         return {
           ...step,
-          inProgress: shootStatus === 'shooting' && !allFilesUploaded,
-          upcoming: shootStatus === 'ready' && !allFilesUploaded,
+          completed: false,
+          inProgress: false, // Gray circle
         };
       }
 
-      // Add local UI states for Editing step
+      // Handle Editing step
       if (step.label === 'Editing') {
-        const hasUploadedFiles = Object.values(uploadProgress).some(hasFiles => hasFiles);
+        // If status is COMPLETED, editing should be marked as completed (green checkmark)
+        if (currentStatus === 'COMPLETED') {
+          return {
+            ...step,
+            completed: true,
+            inProgress: false,
+          };
+        }
+        
+        // If in EDITING status and "Shoot Completed" was clicked (uploading mode):
+        if (currentStatus === 'EDITING' && shootStatus === 'uploading') {
+          // - If at least one file uploaded: show as completed (green checkmark)
+          // - If no files uploaded yet: show as inProgress (green pulsing)
+          return {
+            ...step,
+            completed: hasUploadedFiles, // Green checkmark when files uploaded
+            inProgress: !hasUploadedFiles, // Green pulsing when no files yet
+          };
+        }
+        
+        // If in EDITING but "Shoot Completed" not clicked yet (shootStatus='completed'):
+        // Keep editing as gray (not started)
+        if (currentStatus === 'EDITING' && shootStatus === 'completed') {
+          return {
+            ...step,
+            completed: false,
+            inProgress: false, // Gray circle
+          };
+        }
+        
+        // If still in SHOOTING or earlier status, keep editing as not started (gray)
         return {
           ...step,
-          inProgress: hasUploadedFiles && !allFilesUploaded,
+          completed: false,
+          inProgress: false, // Gray circle
+        };
+      }
+
+      // Handle Order Delivery step
+      if (step.label === 'Order Delivery') {
+        // If status is COMPLETED, Order Delivery should be completed (green checkmark)
+        if (currentStatus === 'COMPLETED') {
+          return {
+            ...step,
+            completed: true,
+            inProgress: false,
+          };
+        }
+        
+        // Otherwise keep as not started (gray)
+        return {
+          ...step,
+          completed: false,
+          inProgress: false, // Gray circle
         };
       }
 
@@ -379,6 +451,9 @@ export default function BookingDetailsPage() {
       setShootStatus('shooting');
       setShootStartTime(new Date());
       setShootingTime({ hours: 0, minutes: 0, seconds: 0 });
+      
+      // Update booking state to reflect new status
+      setBooking(prev => prev ? { ...prev, status: 'SHOOTING' } : null);
     } catch (error) {
       console.error('Failed to start shoot:', error);
       alert('Failed to update status. Please try again.');
@@ -392,6 +467,9 @@ export default function BookingDetailsPage() {
 
       // Update local state
       setShootStatus('completed');
+      
+      // Update booking state to reflect new status
+      setBooking(prev => prev ? { ...prev, status: 'EDITING' } : null);
     } catch (error) {
       console.error('Failed to finish shoot:', error);
       alert('Failed to update status. Please try again.');
@@ -813,6 +891,7 @@ export default function BookingDetailsPage() {
               bookingId={id as string} 
               clientId={booking?.client?.id}
               photographerName={booking?.photographer ? `${booking.photographer.firstname} ${booking.photographer.lastname}` : undefined}
+              bookingStatus={booking?.status}
               onUploadProgress={handleUploadProgress} 
             />
           )}
