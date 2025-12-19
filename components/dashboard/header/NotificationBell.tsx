@@ -9,60 +9,24 @@ import {
   NotificationType,
   notificationConfig 
 } from '@/components/types/notification';
+import { useRealtimeNotifications } from '@/hooks/useRealtimeNotifications';
 
 export default function NotificationBell() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [showClearModal, setShowClearModal] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Fetch notifications
-  const fetchNotifications = async () => {
-    if (!session) return;
-
-    try {
-      setLoading(true);
-      console.log('🔄 Fetching notifications...');
-      const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications`, {
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (!response.ok) {
-        console.error('❌ Failed to fetch notifications:', response.status);
-        return;
-      }
-
-      const data = await response.json();
-      console.log('✅ Notifications fetched:', {
-        total: data.notifications?.length || 0,
-        unreadCount: data.unreadCount || 0,
-        notifications: data.notifications
-      });
-      setNotifications(data.notifications || []);
-      setUnreadCount(data.unreadCount || 0);
-    } catch (error) {
-      console.error('❌ Error fetching notifications:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    if (session) {
-      fetchNotifications();
-
-      // Poll for new notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
-      return () => clearInterval(interval);
-    }
-  }, [session]);
+  // Use real-time notifications hook
+  const { 
+    notifications, 
+    unreadCount, 
+    loading, 
+    refetch,
+    setNotifications,
+    setUnreadCount 
+  } = useRealtimeNotifications();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -80,7 +44,12 @@ export default function NotificationBell() {
 
   const handleMarkAsRead = async (notificationId: string) => {
     try {
-      console.log('📝 Marking notification as read:', notificationId);
+      // Optimistic update - update UI immediately
+      setNotifications(prev => 
+        prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n)
+      );
+      
+      setUnreadCount(prev => Math.max(0, prev - 1));
       
       const response = await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
@@ -89,20 +58,16 @@ export default function NotificationBell() {
           'Content-Type': 'application/json',
         },
       });
-
-      console.log('📝 Mark as read response status:', response.status);
       
       if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Mark as read success:', result);
-        // Fetch fresh data from backend to ensure sync
-        await fetchNotifications();
+        await response.json();
       } else {
-        const errorText = await response.text();
-        console.error('❌ Failed to mark notification as read:', response.status, errorText);
+        // Revert optimistic update on error
+        await refetch();
       }
     } catch (error) {
-      console.error('❌ Error marking notification as read:', error);
+      // Revert optimistic update on error
+      await refetch();
     }
   };
 
@@ -112,7 +77,7 @@ export default function NotificationBell() {
       
       // Delete all notifications one by one
       const deletePromises = notifications.map(notification =>
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/notifications/${notification.id}`, {
+        fetch(`/api/notifications/${notification.id}`, {
           method: 'DELETE',
           credentials: 'include',
           headers: {
@@ -125,7 +90,7 @@ export default function NotificationBell() {
       console.log('✅ All notifications cleared');
       
       // Refresh notifications
-      await fetchNotifications();
+      await refetch();
       setShowClearModal(false);
     } catch (error) {
       console.error('❌ Error clearing notifications:', error);
