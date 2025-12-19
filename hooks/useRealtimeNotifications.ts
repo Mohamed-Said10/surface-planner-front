@@ -56,6 +56,12 @@ export function useRealtimeNotifications(): UseRealtimeNotificationsReturn {
   useEffect(() => {
     if (!session?.user) return;
 
+    // Close any existing connection before creating a new one
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+
     // Fetch initial data
     fetchNotifications();
 
@@ -84,7 +90,15 @@ export function useRealtimeNotifications(): UseRealtimeNotificationsReturn {
       try {
         const newNotification: Notification = JSON.parse(event.data);
 
-        setNotifications((prev) => [newNotification, ...prev]);
+        // Check if notification already exists to prevent duplicates
+        setNotifications((prev) => {
+          const exists = prev.some(n => n.id === newNotification.id);
+          if (exists) {
+            return prev; // Don't add duplicate
+          }
+          return [newNotification, ...prev];
+        });
+        
         setUnreadCount((prev) => prev + 1);
 
         // Optional: Show browser notification
@@ -179,7 +193,7 @@ export function useRealtimeNotifications(): UseRealtimeNotificationsReturn {
       eventSource.close();
       eventSourceRef.current = null;
     };
-  }, [session]);
+  }, [session?.user?.id]); // Use stable user ID instead of entire session object
 
   return {
     notifications,
