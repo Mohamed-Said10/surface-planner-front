@@ -118,66 +118,63 @@ const BookingStatusCard: React.FC<BookingStatusCardProps> = ({
 
   return (
     <div>
-      <div className="bg-white rounded-lg border border-[#DBDCDF] p-6">
-        <h2 className="text-sm font-semibold mb-6">
-          Booking #{shortId} Status
-        </h2>
-        <div className="relative flex justify-between">
-          {bookingStatus.steps.map((step, index) => {
-            const isLastStep = index === bookingStatus.steps.length - 1;
-            const isCompleted = step.completed;
-            const isInProgress = step.inProgress;
+      <div className="bg-white rounded-lg border border-[#DBDCDF] px-6 py-3">
+        <h3 className="text-lg font-semibold mb-2">Status</h3>
 
-            return (
-              <div
-                key={index}
-                className="flex flex-col items-center relative"
-                style={{ width: `${100 / bookingStatus.steps.length}%` }}
-              >
-                {/* Step Circle */}
+        {/* Progress Steps */}
+        <hr className="mb-4 text-[#DBDCDF]" />
+
+        {/* Progress Steps */}
+        <div className="flex items-start justify-between mb-1">
+          {bookingStatus.steps.map((step, index) => (
+            <div key={index} className="flex flex-col relative flex-1">
+              {/* Progress Line */}
+              {index < bookingStatus.steps.length - 1 && (
                 <div
-                  className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 relative z-10
-                  ${
-                    isCompleted
-                      ? "bg-emerald-500"
-                      : isInProgress
-                      ? "bg-orange-500"
-                      : "bg-gray-200"
+                  className={`absolute top-3 h-0.5 ${
+                    step.inProgress
+                      ? 'bg-[#F79009]'
+                      : step.completed
+                        ? 'bg-[#0F9C5A]'
+                        : 'bg-gray-300'
                   }`}
-                >
-                  {isCompleted ? (
-                    <Check className="h-5 w-5 text-white" />
-                  ) : (
-                    <div className="w-2 h-2 rounded-full bg-white" />
-                  )}
-                </div>
+                  style={{
+                    height: '3px',
+                    left: '32px', // Start after the circle
+                    right: '0', // Extend to the right edge
+                    width: 'calc(100% - 40px)', // Full width minus circle diameter
+                    borderRadius: '9px',
+                    zIndex: 0,
+                  }}
+                />
+              )}
 
-                {/* Labels */}
-                <div className="text-center">
-                  <div className="text-xs font-medium">{step.label}</div>
-                  <div className="text-xs text-gray-500">{step.date}</div>
-                </div>
-
-                {/* Line to next step (except after last step) */}
-                {!isLastStep && (
-                  <div
-                    className={`absolute top-3 h-[2px] w-full -right-1/2 z-0
-                      ${
-                        isCompleted &&
-                        !bookingStatus.steps[index + 1].inProgress
-                          ? "bg-emerald-500"
-                          : isCompleted &&
-                            bookingStatus.steps[index + 1].inProgress
-                          ? "bg-orange-500"
-                          : "bg-gray-200"
-                      }`}
-                  />
+              {/* Circle */}
+              <div
+                className={`w-6 h-6 rounded-full flex items-center justify-center mb-2 relative z-10 ${
+                  step.completed
+                    ? 'bg-[#0F9C5A] text-white'
+                    : step.inProgress
+                      ? 'bg-[#F79009] text-white animate-pulse'
+                      : 'bg-gray-200 text-gray-400'
+                }`}
+              >
+                {step.completed ? (
+                  <Check className="h-4 w-4" />
+                ) : (
+                  <div className="w-2 h-2 bg-current rounded-full" />
                 )}
               </div>
-            );
-          })}
+
+              {/* Label and Date */}
+              <div className="text-left">
+                <p className="text-sm font-medium text-gray-900 mb-1">{step.label}</p>
+                <p className="text-xs text-gray-500">{step.date}</p>
+              </div>
+            </div>
+          ))}
         </div>
-      </div> 
+      </div>
     </div>
   );
 };
