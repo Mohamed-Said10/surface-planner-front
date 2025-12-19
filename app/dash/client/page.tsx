@@ -211,13 +211,13 @@ export default function HomePage() {
       }
 
       const data = await response.json();
-      
+
       // Transform the files into the format expected by MediaGallery
       const transformedFiles = data.files?.map((file: any) => ({
         id: file.id,
-        url: file.url,
+        url: file.fileUrl || file.url,
         type: file.mimeType?.startsWith('video/') ? 'video' : 'image',
-        name: file.originalName || file.filename,
+        name: file.fileName || file.originalName || file.filename,
         category: file.fileType
       })) || [];
 
